@@ -120,6 +120,11 @@ describe("buildSheet", () => {
     expect(sheet.skills.find((s) => s.name === "Athletics")).toMatchObject({ proficient: true, bonus: 5 });
     expect(sheet.skills.find((s) => s.name === "Stealth")).toMatchObject({ proficient: false, bonus: 2 });
     expect(sheet.passivePerception).toBe(9);
+    expect(sheet.passives).toEqual([
+      { name: "Perception", stat: "WIS", value: 9 },
+      { name: "Insight", stat: "WIS", value: 9 },
+      { name: "Investigation", stat: "INT", value: 10 },
+    ]);
   });
   it("raises proficiency every four levels", () => {
     expect([1, 4, 5, 9].map(proficiencyBonus)).toEqual([2, 2, 3, 4]);

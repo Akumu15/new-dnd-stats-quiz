@@ -195,6 +195,11 @@ export function buildSheet(save) {
     return { ...s, proficient, bonus: mods[s.stat] + (proficient ? pb : 0) };
   });
   const perception = skills.find((s) => s.name === "Perception").bonus;
+  // Passive score = 10 + the skill's bonus (what you notice without actively trying).
+  const passives = ["Perception", "Insight", "Investigation"].map((name) => {
+    const skill = skills.find((s) => s.name === name);
+    return { name, stat: skill.stat, value: 10 + skill.bonus };
+  });
 
   const hitDie = HIT_DIE[heroClass] || 8;
   const perLevel = Math.max(1, hitDie / 2 + 1 + mods.CON);
@@ -215,6 +220,7 @@ export function buildSheet(save) {
     saves,
     skills,
     passivePerception: 10 + perception,
+    passives,
     armorClass: 10 + mods.DEX,
     initiative: mods.DEX,
     speed: 30,

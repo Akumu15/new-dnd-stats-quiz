@@ -251,6 +251,14 @@ p { margin: 0 0 0.6em; }
 .hp-max strong { color: var(--ink); margin-left: 4px; }
 .hp-box .big { font-size: 2.4rem; margin: 4px 0; color: var(--blood); }
 
+.sense-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sense-list li { display: flex; align-items: center; gap: 10px; }
+.sense-value {
+  flex: none; display: grid; place-items: center; width: 38px; height: 30px; border: 2px solid var(--ink);
+  border-radius: 6px; background: rgba(255, 250, 235, 0.55); font-family: var(--display); font-weight: 900; font-size: 1rem;
+}
+.sense-name { font-size: 0.98rem; }
+
 .trait-body { font-size: 0.98rem; }
 .trait-body p:last-child { margin-bottom: 0; }
 .trait-body strong { font-family: var(--display); font-size: 0.85rem; letter-spacing: 0.03em; }

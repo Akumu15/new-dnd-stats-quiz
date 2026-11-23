@@ -105,11 +105,6 @@ export default function CharacterSheet({ save, onTrain, onTrials, onRetake, onRe
             </ul>
             <div className="frame-title">Skills</div>
           </div>
-
-          <div className="pill-stat">
-            <span className="pill-value">{sheet.passivePerception}</span>
-            <span className="pill-label">Passive Perception</span>
-          </div>
         </section>
 
         {/* ── Column 3: combat + traits ── */}
@@ -144,6 +139,18 @@ export default function CharacterSheet({ save, onTrain, onTrials, onRetake, onRe
                 <span className="tiny">Training Streak</span>
               </div>
             </div>
+          </div>
+
+          <div className="framed senses">
+            <ul className="sense-list">
+              {sheet.passives.map((p) => (
+                <li key={p.name}>
+                  <span className="sense-value">{p.value}</span>
+                  <span className="sense-name">Passive {p.name} <span className="check-stat">({p.stat})</span></span>
+                </li>
+              ))}
+            </ul>
+            <div className="frame-title">Passive Senses</div>
           </div>
 
           <TraitBox title="Class Feature">
