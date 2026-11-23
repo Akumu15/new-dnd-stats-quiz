@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ABILITIES, QUESTIONS } from "../data/gameData.js";
 
 const abilityByKey = Object.fromEntries(ABILITIES.map((a) => [a.key, a]));
+const NUMERALS = ["I", "II", "III", "IV", "V"];
 
 export default function Quiz({ onFinish, onCancel }) {
   const [index, setIndex] = useState(0);
@@ -10,6 +11,7 @@ export default function Quiz({ onFinish, onCancel }) {
   const question = QUESTIONS[index];
   const ability = abilityByKey[question.stat];
   const isLast = index === QUESTIONS.length - 1;
+  const trialNumber = ABILITIES.findIndex((a) => a.key === question.stat) + 1;
 
   const choose = (optionIndex) => {
     const next = answers.map((a, i) => (i === index ? optionIndex : a));
@@ -31,39 +33,45 @@ export default function Quiz({ onFinish, onCancel }) {
   });
 
   return (
-    <section className="quiz">
-      <div className="quiz-meta">
-        <span className="chip">
-          <span aria-hidden="true">{ability.icon}</span> {ability.name}
-        </span>
-        <span className="counter">
-          {index + 1} / {QUESTIONS.length}
-        </span>
-      </div>
-      <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={index}>
-        <div className="progress-fill" style={{ width: `${(index / QUESTIONS.length) * 100}%` }} />
+    <article className="parchment quiz">
+      <div className="quiz-head">
+        <span className="kicker">Trial {NUMERALS[trialNumber - 1] ?? trialNumber} of VI · The Trial of {ability.name}</span>
+        <span className="quiz-count">Question {index + 1} of {QUESTIONS.length}</span>
       </div>
 
-      <h2 className="question">{question.q}</h2>
+      <div className="candle-track" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={index}>
+        {ABILITIES.map((a) => {
+          const done = QUESTIONS.filter((q, i) => q.stat === a.key && i < index).length;
+          const total = QUESTIONS.filter((q) => q.stat === a.key).length;
+          return (
+            <div key={a.key} className={a.key === question.stat ? "candle current" : "candle"}>
+              <div className="candle-fill" style={{ width: `${(done / total) * 100}%` }} />
+              <span>{a.key}</span>
+            </div>
+          );
+        })}
+      </div>
 
-      <div className="options">
+      <p className="oracle">The Oracle asks:</p>
+      <h2 className="question" key={index}>“{question.q}”</h2>
+
+      <ol className="answers">
         {question.a.map((text, i) => (
-          <button
-            key={`${index}-${i}`}
-            className={answers[index] === i ? "option selected" : "option"}
-            onClick={() => choose(i)}
-          >
-            <span className="option-key" aria-hidden="true">{i + 1}</span>
-            {text}
-          </button>
+          <li key={`${index}-${i}`}>
+            <button className={answers[index] === i ? "answer selected" : "answer"} onClick={() => choose(i)}>
+              <span className="answer-seal" aria-hidden="true">{NUMERALS[i]}</span>
+              <span>{text}</span>
+            </button>
+          </li>
         ))}
-      </div>
+      </ol>
 
-      <div className="quiz-nav">
-        <button className="btn ghost" onClick={() => (index > 0 ? setIndex(index - 1) : onCancel())}>
-          {index > 0 ? "← Back" : "Cancel"}
+      <div className="quiz-foot">
+        <button className="btn-ink ghost" onClick={() => (index > 0 ? setIndex(index - 1) : onCancel())}>
+          {index > 0 ? "← Previous question" : "Leave the Oracle"}
         </button>
+        <span className="fineprint">Tip: press 1–5 to answer</span>
       </div>
-    </section>
+    </article>
   );
 }

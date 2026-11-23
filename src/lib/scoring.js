@@ -7,6 +7,10 @@ import {
   MIN_SCORE,
   MAX_SCORE,
   XP_PER_LEVEL,
+  SKILLS,
+  BACKGROUND_BY_STAT,
+  HIT_DIE,
+  TITLES,
 } from "../data/gameData.js";
 
 const MAX_ANSWER = 4;
@@ -151,4 +155,63 @@ function shiftKey(key, deltaDays) {
 
 export function questById(id) {
   return QUESTS.find((q) => q.id === id);
+}
+
+// ── Full character sheet ─────────────────────────────────────────────────
+
+export function proficiencyBonus(level) {
+  return 2 + Math.floor((level - 1) / 4);
+}
+
+/** Every derived number the character sheet shows, from the saved character. */
+export function buildSheet(save) {
+  const scores = currentScores(save.base, save.xp);
+  const mods = Object.fromEntries(ABILITY_KEYS.map((k) => [k, modifier(scores[k])]));
+  const ranked = rankAbilities(scores);
+  const heroClass = pickClass(scores);
+  const level = characterLevel(save.xp);
+  const pb = proficiencyBonus(level);
+
+  // Proficient in the saves of your two best abilities, and up to two skills of each.
+  const proficientStats = ranked.slice(0, 2);
+  const proficientSkills = new Set(
+    proficientStats.flatMap((stat) => SKILLS.filter((s) => s.stat === stat).slice(0, 2).map((s) => s.name))
+  );
+
+  const saves = ABILITY_KEYS.map((k) => {
+    const proficient = proficientStats.includes(k);
+    return { stat: k, proficient, bonus: mods[k] + (proficient ? pb : 0) };
+  });
+  const skills = SKILLS.map((s) => {
+    const proficient = proficientSkills.has(s.name);
+    return { ...s, proficient, bonus: mods[s.stat] + (proficient ? pb : 0) };
+  });
+  const perception = skills.find((s) => s.name === "Perception").bonus;
+
+  const hitDie = HIT_DIE[heroClass] || 8;
+  const perLevel = Math.max(1, hitDie / 2 + 1 + mods.CON);
+  const maxHp = Math.max(1, hitDie + mods.CON) + (level - 1) * perLevel;
+
+  return {
+    scores,
+    mods,
+    ranked,
+    heroClass,
+    level,
+    title: TITLES[Math.min(level, TITLES.length) - 1],
+    background: BACKGROUND_BY_STAT[ranked[0]],
+    xpTotal: totalXp(save.xp),
+    nextLevelAt: level * XP_PER_LEVEL,
+    proficiencyBonus: pb,
+    saves,
+    skills,
+    passivePerception: 10 + perception,
+    armorClass: 10 + mods.DEX,
+    initiative: mods.DEX,
+    speed: 30,
+    hitDie,
+    maxHp,
+    strengths: ranked.slice(0, 2),
+    weaknesses: weakestAbilities(scores),
+  };
 }

@@ -13,6 +13,8 @@ import {
   cooldownDays,
   lastCompletions,
   streak,
+  buildSheet,
+  proficiencyBonus,
 } from "./scoring.js";
 import { QUESTIONS } from "../data/gameData.js";
 
@@ -87,6 +89,33 @@ describe("weakestAbilities", () => {
 describe("tierIndex", () => {
   it("bands scores", () => {
     expect([3, 5, 6, 9, 10, 12, 13, 16, 17, 20].map(tierIndex)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+  });
+});
+
+describe("buildSheet", () => {
+  const save = {
+    base: { STR: 16, DEX: 14, CON: 12, INT: 10, WIS: 8, CHA: 6 },
+    xp: { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 },
+  };
+  it("derives class, background and combat numbers", () => {
+    const sheet = buildSheet(save);
+    expect(sheet.heroClass).toBe("Fighter");
+    expect(sheet.background).toBe("Soldier");
+    expect(sheet.level).toBe(1);
+    expect(sheet.proficiencyBonus).toBe(2);
+    expect(sheet.armorClass).toBe(12);
+    expect(sheet.maxHp).toBe(11); // d10 + CON +1
+  });
+  it("adds proficiency to the top two saves and their skills", () => {
+    const sheet = buildSheet(save);
+    expect(sheet.saves.find((s) => s.stat === "STR")).toMatchObject({ proficient: true, bonus: 5 });
+    expect(sheet.saves.find((s) => s.stat === "CHA")).toMatchObject({ proficient: false, bonus: -2 });
+    expect(sheet.skills.find((s) => s.name === "Athletics")).toMatchObject({ proficient: true, bonus: 5 });
+    expect(sheet.skills.find((s) => s.name === "Stealth")).toMatchObject({ proficient: false, bonus: 2 });
+    expect(sheet.passivePerception).toBe(9);
+  });
+  it("raises proficiency every four levels", () => {
+    expect([1, 4, 5, 9].map(proficiencyBonus)).toEqual([2, 2, 3, 4]);
   });
 });
 

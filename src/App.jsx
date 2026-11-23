@@ -77,15 +77,15 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <button className="brand" onClick={() => setView(save ? "sheet" : "landing")}>
-          <span aria-hidden="true">🎲</span> Roll For Real
+          <D20 /> Roll For Real
         </button>
         {save && view !== "quiz" && (
           <nav className="tabs" aria-label="Sections">
             <button className={view === "sheet" ? "tab active" : "tab"} onClick={() => setView("sheet")}>
-              Character
+              Character Sheet
             </button>
             <button className={view === "train" ? "tab active" : "tab"} onClick={() => setView("train")}>
-              Training
+              Quest Board
             </button>
           </nav>
         )}
@@ -108,8 +108,24 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        Your character is saved in this browser only. Just for fun, not a medical or psychological assessment.
+        <p>Your character is kept in this browser only. Made for fun, not a medical or psychological assessment.</p>
+        <p>
+          An unofficial fan project, not affiliated with or endorsed by Wizards of the Coast. Includes material from the
+          System Reference Document 5.1 by Wizards of the Coast LLC, licensed under{" "}
+          <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noreferrer">CC-BY-4.0</a>.
+        </p>
       </footer>
     </div>
+  );
+}
+
+// Original twenty-sided die mark (simple geometric outline).
+function D20() {
+  return (
+    <svg className="d20" viewBox="0 0 32 32" aria-hidden="true">
+      <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <polygon points="16,8 23.5,21 8.5,21" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M16 2 16 8 M3 9.5 16 8 29 9.5 M3 9.5 8.5 21 M29 9.5 23.5 21 M3 22.5 8.5 21 M29 22.5 23.5 21 M16 30 8.5 21 M16 30 23.5 21" stroke="currentColor" strokeWidth="1.2" fill="none" />
+    </svg>
   );
 }

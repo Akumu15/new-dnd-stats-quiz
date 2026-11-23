@@ -20,81 +20,81 @@ export default function Training({ save, onComplete, onUndo }) {
 
   const today = dateKey();
   const last = lastCompletions(save.history);
-  const todayCount = save.history.filter((h) => h.date === today).length;
-  const todayXp = save.history.filter((h) => h.date === today).reduce((s, h) => s + h.xp, 0);
+  const todays = save.history.filter((h) => h.date === today);
+  const todayXp = todays.reduce((s, h) => s + h.xp, 0);
   const days = streak(save.history, today);
 
   const shownStats = filter === "focus" ? focus : filter === "all" ? ABILITIES.map((a) => a.key) : [filter];
   const recent = [...save.history].reverse().slice(0, 8);
 
   return (
-    <section className="training">
-      <div className="card training-summary">
-        <div><span>Today</span><strong>{todayCount} quests</strong></div>
-        <div><span>XP today</span><strong>+{todayXp}</strong></div>
-        <div><span>Streak</span><strong>{days} {days === 1 ? "day" : "days"} 🔥</strong></div>
-      </div>
+    <div className="board">
+      <header className="board-head">
+        <h1 className="board-title">The Quest Board</h1>
+        <p className="board-sub">Real deeds, real growth. Complete a quest, claim its XP, and grow stronger.</p>
+        <div className="board-stats">
+          <div><strong>{todays.length}</strong><span>quests today</span></div>
+          <div><strong>+{todayXp}</strong><span>XP today</span></div>
+          <div><strong>{days}</strong><span>day streak</span></div>
+        </div>
+      </header>
 
       <div className="filters" role="tablist" aria-label="Filter quests">
-        <FilterButton value="focus" current={filter} onSelect={setFilter}>⭐ Focus</FilterButton>
-        <FilterButton value="all" current={filter} onSelect={setFilter}>All</FilterButton>
+        <FilterButton value="focus" current={filter} onSelect={setFilter}>★ Your path</FilterButton>
+        <FilterButton value="all" current={filter} onSelect={setFilter}>All quests</FilterButton>
         {ABILITIES.map((a) => (
-          <FilterButton key={a.key} value={a.key} current={filter} onSelect={setFilter}>
-            {a.icon} {a.key}
-          </FilterButton>
+          <FilterButton key={a.key} value={a.key} current={filter} onSelect={setFilter}>{a.key}</FilterButton>
         ))}
       </div>
-
-      {filter === "focus" && (
-        <p className="hint">These are quests for your two lowest stats, where training pays off most.</p>
-      )}
+      {filter === "focus" && <p className="board-hint">These quests train your two weakest abilities, where every deed counts most.</p>}
 
       {shownStats.map((statKey) => {
         const ability = abilityByKey[statKey];
         const quests = QUESTS.filter((q) => q.stat === statKey);
         return (
-          <div key={statKey} className="quest-group">
-            <div className="quest-group-head">
-              <StatBlock ability={ability} base={save.base[statKey]} xp={save.xp[statKey]} />
-              <p>{ability.blurb}</p>
+          <section key={statKey} className="quest-row">
+            <div className="quest-row-head">
+              <StatBlock ability={ability} base={save.base[statKey]} xp={save.xp[statKey]} compact />
+              <div>
+                <h2>Trials of {ability.name}</h2>
+                <p>{ability.blurb}</p>
+              </div>
             </div>
-            <ul className="quest-list">
-              {quests.map((quest) => {
+            <ul className="notices">
+              {quests.map((quest, i) => {
                 const wait = cooldownDays(quest, last[quest.id], today);
                 const doneToday = last[quest.id] === today;
                 return (
-                  <li key={quest.id} className={wait > 0 ? "quest done" : "quest"}>
-                    <div className="quest-body">
-                      <div className="quest-title">
-                        {quest.title}
-                        <span className="tag">{quest.freq}</span>
-                      </div>
-                      <div className="quest-desc">{quest.desc}</div>
-                    </div>
-                    <div className="quest-action">
+                  <li key={quest.id} className={wait > 0 ? "notice done" : "notice"} style={{ "--tilt": `${((i % 3) - 1) * 0.8}deg` }}>
+                    <span className="pin" aria-hidden="true" />
+                    <div className="notice-kind">{quest.freq === "weekly" ? "Weekly Bounty" : "Daily Deed"}</div>
+                    <h3>{quest.title}</h3>
+                    <p>{quest.desc}</p>
+                    <div className="notice-foot">
                       {wait === 0 ? (
-                        <button className="btn small primary" onClick={() => onComplete(quest.id)}>
-                          +{quest.xp} XP
+                        <button className="btn-seal small" onClick={() => onComplete(quest.id)}>
+                          Claim {quest.xp} XP
                         </button>
                       ) : doneToday ? (
-                        <button className="btn small ghost" onClick={() => onUndo(quest.id)} title="Undo today's completion">
-                          ✓ Done · undo
-                        </button>
+                        <>
+                          <span className="stamp">Completed</span>
+                          <button className="link-ink" onClick={() => onUndo(quest.id)}>undo</button>
+                        </>
                       ) : (
-                        <span className="cooldown">✓ Back in {wait} {wait === 1 ? "day" : "days"}</span>
+                        <span className="stamp muted">Returns in {wait} {wait === 1 ? "day" : "days"}</span>
                       )}
                     </div>
                   </li>
                 );
               })}
             </ul>
-          </div>
+          </section>
         );
       })}
 
       {recent.length > 0 && (
-        <div className="card log">
-          <h2>Adventure log</h2>
+        <article className="parchment chronicle">
+          <h2 className="section-title">Chronicle of Deeds</h2>
           <ul>
             {recent.map((h, i) => {
               const quest = questById(h.questId);
@@ -107,9 +107,9 @@ export default function Training({ save, onComplete, onUndo }) {
               );
             })}
           </ul>
-        </div>
+        </article>
       )}
-    </section>
+    </div>
   );
 }
 

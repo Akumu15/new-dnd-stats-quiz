@@ -77,10 +77,10 @@ export const QUESTIONS = [
 
 // Class is chosen from the two highest abilities. Key = "PRIMARY+SECONDARY".
 export const CLASS_BY_PAIR = {
-  "STR+DEX": "Fighter", "STR+CON": "Barbarian", "STR+INT": "Eldritch Knight", "STR+WIS": "Ranger", "STR+CHA": "Paladin",
+  "STR+DEX": "Fighter", "STR+CON": "Barbarian", "STR+INT": "Spellblade", "STR+WIS": "Ranger", "STR+CHA": "Paladin",
   "DEX+STR": "Swashbuckler", "DEX+CON": "Monk", "DEX+INT": "Rogue", "DEX+WIS": "Ranger", "DEX+CHA": "Bard",
-  "CON+STR": "Barbarian", "CON+DEX": "Monk", "CON+INT": "Artificer", "CON+WIS": "Druid", "CON+CHA": "Sorcerer",
-  "INT+STR": "Eldritch Knight", "INT+DEX": "Artificer", "INT+CON": "Wizard", "INT+WIS": "Wizard", "INT+CHA": "Warlock",
+  "CON+STR": "Barbarian", "CON+DEX": "Monk", "CON+INT": "Tinker", "CON+WIS": "Druid", "CON+CHA": "Sorcerer",
+  "INT+STR": "Spellblade", "INT+DEX": "Tinker", "INT+CON": "Wizard", "INT+WIS": "Wizard", "INT+CHA": "Warlock",
   "WIS+STR": "Cleric", "WIS+DEX": "Monk", "WIS+CON": "Druid", "WIS+INT": "Sage", "WIS+CHA": "Cleric",
   "CHA+STR": "Paladin", "CHA+DEX": "Bard", "CHA+CON": "Sorcerer", "CHA+INT": "Warlock", "CHA+WIS": "Bard",
 };
@@ -88,14 +88,14 @@ export const CLASS_BY_PAIR = {
 export const CLASS_FLAVOR = {
   Fighter: "Disciplined and battle-ready. You meet challenges head-on.",
   Barbarian: "Tough as old leather. You push through what stops others.",
-  "Eldritch Knight": "Brains and brawn: a rare blend of power and study.",
+  Spellblade: "Brains and brawn: a rare blend of power and study.",
   Ranger: "Grounded, perceptive and at home in the wild.",
   Paladin: "Strong and inspiring. People follow your lead.",
   Swashbuckler: "Quick, bold and stylish. You move before others think.",
   Monk: "Balanced body and focused mind. Control is your weapon.",
   Rogue: "Clever and nimble. You find the angle nobody saw.",
   Bard: "Charming and quick-witted. Every room is your stage.",
-  Artificer: "A tinkerer and maker. You build your way out of problems.",
+  Tinker: "A maker and inventor. You build your way out of problems.",
   Druid: "Patient, resilient and in tune with the world around you.",
   Sorcerer: "Natural magnetism and staying power. Your presence is felt.",
   Wizard: "A scholar of the arcane. Knowledge is your power.",
@@ -150,6 +150,44 @@ export const QUESTS = [
   { id: "cha-reach", stat: "CHA", freq: "daily", xp: 10, title: "Send a raven", desc: "Message or call a friend you haven't talked to in a while." },
   { id: "cha-plan", stat: "CHA", freq: "weekly", xp: 40, title: "Rally the party", desc: "Organize a hangout, game night or group activity." },
 ];
+
+// ── Character sheet extras ─────────────────────────────────────────────
+// Skill names come from the 5e System Reference Document 5.1 (CC-BY-4.0, see README).
+export const SKILLS = [
+  { name: "Athletics", stat: "STR" },
+  { name: "Acrobatics", stat: "DEX" },
+  { name: "Sleight of Hand", stat: "DEX" },
+  { name: "Stealth", stat: "DEX" },
+  { name: "Arcana", stat: "INT" },
+  { name: "History", stat: "INT" },
+  { name: "Investigation", stat: "INT" },
+  { name: "Nature", stat: "INT" },
+  { name: "Religion", stat: "INT" },
+  { name: "Animal Handling", stat: "WIS" },
+  { name: "Insight", stat: "WIS" },
+  { name: "Medicine", stat: "WIS" },
+  { name: "Perception", stat: "WIS" },
+  { name: "Survival", stat: "WIS" },
+  { name: "Deception", stat: "CHA" },
+  { name: "Intimidation", stat: "CHA" },
+  { name: "Performance", stat: "CHA" },
+  { name: "Persuasion", stat: "CHA" },
+];
+
+// Background from your single strongest ability.
+export const BACKGROUND_BY_STAT = {
+  STR: "Soldier", DEX: "Wanderer", CON: "Laborer", INT: "Scholar", WIS: "Hermit", CHA: "Entertainer",
+};
+
+// Hit die by class (Tinker/Spellblade/Swashbuckler use d8/d10 like their nearest relatives).
+export const HIT_DIE = {
+  Barbarian: 12, Fighter: 10, Paladin: 10, Ranger: 10, Spellblade: 10,
+  Swashbuckler: 8, Monk: 8, Rogue: 8, Bard: 8, Tinker: 8, Druid: 8, Cleric: 8, Warlock: 8,
+  Sage: 6, Sorcerer: 6, Wizard: 6, Adventurer: 8,
+};
+
+// Title by character level (index = level - 1, last one repeats).
+export const TITLES = ["Novice", "Apprentice", "Journeyman", "Adept", "Veteran", "Expert", "Champion", "Hero", "Legend"];
 
 export const XP_PER_POINT = 100; // XP needed in an ability to raise it by 1
 export const MIN_SCORE = 3;
