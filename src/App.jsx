@@ -2,18 +2,30 @@ import { useEffect, useState } from "react";
 import { ABILITY_KEYS } from "./data/gameData.js";
 import { boardFor, computeBaseScores, dateKey, questById } from "./lib/scoring.js";
 import { canClaim } from "./lib/progression.js";
+import { recalibrate, trialAvailability } from "./lib/trials.js";
+import { decodeShare } from "./lib/share.js";
 import { loadSave, writeSave } from "./lib/storage.js";
+import { TRIAL_XP } from "./data/trials.js";
 import Landing from "./components/Landing.jsx";
 import Quiz from "./components/Quiz.jsx";
 import CharacterSheet from "./components/CharacterSheet.jsx";
 import Training from "./components/Training.jsx";
+import Trials from "./components/Trials.jsx";
+import SharedSheet from "./components/SharedSheet.jsx";
 
 const emptyXp = () => Object.fromEntries(ABILITY_KEYS.map((k) => [k, 0]));
 
 export default function App() {
   const [save, setSave] = useState(() => loadSave());
-  const [view, setView] = useState(() => (loadSave() ? "sheet" : "landing"));
+  const [shared, setShared] = useState(() => decodeShare(window.location.hash));
+  const [view, setView] = useState(() => (decodeShare(window.location.hash) ? "shared" : loadSave() ? "sheet" : "landing"));
   const [pendingName, setPendingName] = useState("");
+
+  const leaveShared = () => {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    setShared(null);
+    setView(save ? "sheet" : "landing");
+  };
 
   useEffect(() => {
     writeSave(save);
@@ -34,6 +46,7 @@ export default function App() {
       base: computeBaseScores(answers),
       xp: emptyXp(),
       history: [],
+      trials: [],
       focus: null,
       createdAt: new Date().toISOString(),
     });
@@ -81,16 +94,34 @@ export default function App() {
     }
   };
 
+  // Record a Trial: always award the rite's XP, then optionally move the stat to the measured score.
+  const recordTrial = (stat, raw, measured, apply) => {
+    const today = dateKey();
+    setSave((s) => {
+      if (!trialAvailability(s, stat, today).available) return s;
+      let base = s.base[stat];
+      let xp = (s.xp[stat] || 0) + TRIAL_XP;
+      if (apply) ({ base, xp } = recalibrate(base, xp, measured));
+      return {
+        ...s,
+        base: { ...s.base, [stat]: base },
+        xp: { ...s.xp, [stat]: xp },
+        history: [...s.history, { questId: `trial-${stat}`, date: today, xp: TRIAL_XP, stat, freq: "trial" }],
+        trials: [...(s.trials || []), { stat, date: today, raw, measured, applied: apply }],
+      };
+    });
+  };
+
   const rename = (name) => setSave((s) => ({ ...s, name }));
   const setFocus = (focus) => setSave((s) => ({ ...s, focus }));
 
   return (
     <div className="app">
       <header className="topbar">
-        <button className="brand" onClick={() => setView(save ? "sheet" : "landing")}>
+        <button className="brand" onClick={() => (shared ? leaveShared() : setView(save ? "sheet" : "landing"))}>
           <D20 /> Roll For Real
         </button>
-        {save && view !== "quiz" && (
+        {save && view !== "quiz" && view !== "shared" && (
           <nav className="tabs" aria-label="Sections">
             <button className={view === "sheet" ? "tab active" : "tab"} onClick={() => setView("sheet")}>
               Character Sheet
@@ -98,11 +129,15 @@ export default function App() {
             <button className={view === "train" ? "tab active" : "tab"} onClick={() => setView("train")}>
               Quest Board
             </button>
+            <button className={view === "trials" ? "tab active" : "tab"} onClick={() => setView("trials")}>
+              Trials
+            </button>
           </nav>
         )}
       </header>
 
       <main className="content">
+        {view === "shared" && shared && <SharedSheet hero={shared} hasOwn={!!save} onRollYourOwn={leaveShared} />}
         {view === "landing" && <Landing onStart={startQuiz} />}
         {view === "quiz" && (
           <Quiz
@@ -111,8 +146,9 @@ export default function App() {
           />
         )}
         {view === "sheet" && save && (
-          <CharacterSheet save={save} onTrain={() => setView("train")} onRetake={retake} onRename={rename} />
+          <CharacterSheet save={save} onTrain={() => setView("train")} onTrials={() => setView("trials")} onRetake={retake} onRename={rename} />
         )}
+        {view === "trials" && save && <Trials save={save} onRecord={recordTrial} />}
         {view === "train" && save && (
           <Training save={save} onComplete={completeQuest} onUndo={undoQuest} onFocus={setFocus} />
         )}

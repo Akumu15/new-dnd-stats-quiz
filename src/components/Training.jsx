@@ -125,7 +125,13 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
               return (
                 <li key={`${h.questId}-${h.date}-${i}`}>
                   <span className="log-date">{h.date}</span>
-                  <span>{quest ? quest.title.replace("Bounty: ", "") : "A forgotten deed"}</span>
+                  <span>
+                    {quest
+                      ? quest.title.replace("Bounty: ", "")
+                      : h.freq === "trial"
+                        ? `Trial of ${abilityByKey[h.stat]?.name ?? "?"}`
+                        : "A forgotten deed"}
+                  </span>
                   <span className="log-xp">+{h.xp} {h.stat || quest?.stat}</span>
                 </li>
               );

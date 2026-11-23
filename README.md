@@ -6,6 +6,26 @@ Find out what your D&D ability scores would be in real life, then train to level
 2. **Character sheet**: a full parchment sheet with ability boxes, proficiency bonus, saving throws, 18 skills, AC, initiative, speed, HP and hit dice, plus class, background and title, and strengths and flaws in plain language.
 3. **Quest Board**: real-world quests (gym, reading, meditation, socializing…) that slowly raise your scores. See *Progression* below.
 
+4. **Trials**: one real measurement per ability, which can prove or correct your sheet. See *Trials* below.
+5. **Sharing**: a parchment PNG card (the share sheet on phones, a download elsewhere) and a link that opens a read-only view of your hero.
+
+## Quiz scale
+
+The quiz maps to **3–18**, the classic human range. All-middle answers give an ordinary **10**, and only near-perfect answers reach 16–18. The legendary **19–20** can never come from the quiz; it must be earned through training.
+
+## Trials
+
+| Ability | Trial | How |
+|---|---|---|
+| STR | The Iron Test | Max push-ups in one set (entered) |
+| DEX | The Stork's Stillness | One-leg balance with eyes closed, best of 3 (entered) |
+| CON | The Twelve-Minute March | Cooper 12-minute distance (entered) |
+| INT | The Sage's Memory | In-app digit-span memory test |
+| WIS | The Seer's Sense | In-app: sense 30 seconds without a clock, average error over 3 tries |
+| CHA | The Herald's Challenge | In-app 60-second impromptu speech on a random topic, then count your stumbles |
+
+Each Trial can be taken once every 30 days and earns 25 XP. Results map to a score (tables in `src/data/trials.js`, capped at 18). If the result differs from the sheet, the player chooses whether to update it, and XP banked toward the next point is kept. A matching result in the last 90 days marks the stat **Proven**. Character level uses lifetime XP, so recalibrating a stat never lowers your level.
+
 ## Progression (balance)
 
 Growth is meant to feel like real life: steady, and slower the better you get.

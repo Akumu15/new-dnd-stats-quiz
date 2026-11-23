@@ -17,12 +17,16 @@ import {
 import { QUESTIONS } from "../data/gameData.js";
 
 describe("rawToScore", () => {
-  it("maps the ends of the range to 3 and 20", () => {
+  it("maps the ends of the range to 3 and 18 (19–20 must be earned)", () => {
     expect(rawToScore(0, 16)).toBe(3);
-    expect(rawToScore(16, 16)).toBe(20);
+    expect(rawToScore(16, 16)).toBe(18);
   });
-  it("puts the middle answer around average", () => {
-    expect(rawToScore(8, 16)).toBe(12);
+  it("puts all-middle answers at an ordinary 10", () => {
+    expect(rawToScore(8, 16)).toBe(10);
+  });
+  it("needs near-perfect answers for a heroic 17", () => {
+    expect(rawToScore(14, 16)).toBe(16);
+    expect(rawToScore(15, 16)).toBe(17);
   });
 });
 
@@ -45,7 +49,7 @@ describe("computeBaseScores", () => {
   it("scores each ability from only its own questions", () => {
     const answers = QUESTIONS.map((q) => (q.stat === "STR" ? 4 : 0));
     const scores = computeBaseScores(answers);
-    expect(scores.STR).toBe(20);
+    expect(scores.STR).toBe(18);
     expect(scores.DEX).toBe(3);
     expect(scores.CHA).toBe(3);
   });

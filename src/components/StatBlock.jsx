@@ -3,7 +3,7 @@ import { scoreProgress } from "../lib/progression.js";
 
 // An ability box in classic sheet style: name on top, big modifier, score in an oval,
 // and a thin ink line showing XP toward the next point.
-export default function StatBlock({ ability, base, xp = 0, highlight, compact }) {
+export default function StatBlock({ ability, base, xp = 0, highlight, compact, proven }) {
   const { score, into, needed, progress, capped } = scoreProgress(base, xp);
   const gained = score - base;
   const classes = ["ability-box", highlight && "highlight", compact && "compact"].filter(Boolean).join(" ");
@@ -26,6 +26,7 @@ export default function StatBlock({ ability, base, xp = 0, highlight, compact })
         </div>
       )}
       {gained > 0 && <div className="ability-gain">▲ {gained} trained</div>}
+      {proven && <div className="ability-proven" title="Confirmed by a Trial in the last 90 days">⚔ Proven</div>}
     </div>
   );
 }

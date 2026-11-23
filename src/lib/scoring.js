@@ -15,11 +15,16 @@ export { questById } from "../data/quests.js";
 
 const MAX_ANSWER = 4;
 
-/** Map a raw questionnaire total (0..maxRaw) onto the 3–20 ability score range. */
+/**
+ * Map a raw questionnaire total (0..maxRaw) onto 3–18, the classic "3d6" human range.
+ * Middle answers → 10 (an ordinary person). The quiz never grants 19–20: those are
+ * legendary and can only be earned through training.
+ */
+export const QUIZ_MAX_SCORE = 18;
 export function rawToScore(raw, maxRaw) {
   if (maxRaw <= 0) return MIN_SCORE;
   const clamped = Math.max(0, Math.min(raw, maxRaw));
-  return MIN_SCORE + Math.round((clamped / maxRaw) * (MAX_SCORE - MIN_SCORE));
+  return MIN_SCORE + Math.floor((clamped * (QUIZ_MAX_SCORE - MIN_SCORE)) / maxRaw);
 }
 
 /** Standard D&D modifier: floor((score - 10) / 2). */
@@ -98,6 +103,11 @@ export function characterLevel(xp) {
   return levelForXp(totalXp(xp));
 }
 
+/** All XP ever earned (quests + trial rites). Never drops, even when a Trial recalibrates a stat. */
+export function lifetimeXp(save) {
+  return (save.history || []).reduce((sum, h) => sum + (h.xp || 0), 0);
+}
+
 // ── Dates ──────────────────────────────────────────────────────────────
 
 /** Local calendar date as "YYYY-MM-DD". */
@@ -166,7 +176,8 @@ export function buildSheet(save) {
   const mods = Object.fromEntries(ABILITY_KEYS.map((k) => [k, modifier(scores[k])]));
   const ranked = rankAbilities(scores);
   const heroClass = pickClass(scores);
-  const level = characterLevel(save.xp);
+  const xpTotal = lifetimeXp(save);
+  const level = levelForXp(xpTotal);
   const pb = proficiencyBonus(level);
 
   // Proficient in the saves of your two best abilities, and up to two skills of each.
@@ -197,7 +208,7 @@ export function buildSheet(save) {
     level,
     title: TITLES[Math.min(level, TITLES.length) - 1],
     background: BACKGROUND_BY_STAT[ranked[0]],
-    xpTotal: totalXp(save.xp),
+    xpTotal,
     levelStartsAt: levelThreshold(level),
     nextLevelAt: levelThreshold(level + 1),
     proficiencyBonus: pb,

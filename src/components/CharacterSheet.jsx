@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { ABILITIES, CLASS_FLAVOR, TIER_TEXT } from "../data/gameData.js";
 import { buildSheet, dateKey, formatModifier, streak, tierIndex } from "../lib/scoring.js";
+import { isProven } from "../lib/trials.js";
 import StatBlock from "./StatBlock.jsx";
+import ShareBar from "./ShareBar.jsx";
 
 const abilityByKey = Object.fromEntries(ABILITIES.map((a) => [a.key, a]));
 
-export default function CharacterSheet({ save, onTrain, onRetake, onRename }) {
+export default function CharacterSheet({ save, onTrain, onTrials, onRetake, onRename }) {
   const sheet = buildSheet(save);
+  const today = dateKey();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(save.name);
 
@@ -59,7 +62,14 @@ export default function CharacterSheet({ save, onTrain, onRetake, onRename }) {
         {/* ── Column 1: abilities ── */}
         <section className="col abilities" aria-label="Ability scores">
           {ABILITIES.map((a) => (
-            <StatBlock key={a.key} ability={a} base={save.base[a.key]} xp={save.xp[a.key]} highlight={a.key === sheet.ranked[0]} />
+            <StatBlock
+              key={a.key}
+              ability={a}
+              base={save.base[a.key]}
+              xp={save.xp[a.key]}
+              highlight={a.key === sheet.ranked[0]}
+              proven={isProven(save, a.key, sheet.scores[a.key], today)}
+            />
           ))}
         </section>
 
@@ -168,8 +178,16 @@ export default function CharacterSheet({ save, onTrain, onRetake, onRename }) {
         )}
         <div className="foot-actions">
           <button className="btn-seal" onClick={onTrain}>To the Quest Board</button>
-          <button className="btn-ink ghost" onClick={onRetake}>Roll a new character</button>
+          <button className="btn-ink" onClick={onTrials}>Prove your stats in the Trials</button>
         </div>
+        <ShareBar
+          name={save.name}
+          level={sheet.level}
+          scores={sheet.scores}
+          heroClass={sheet.heroClass}
+          background={sheet.background}
+        />
+        <button className="btn-ink ghost" onClick={onRetake}>Roll a new character</button>
       </footer>
     </article>
   );
