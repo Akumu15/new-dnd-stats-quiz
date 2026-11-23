@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ABILITIES, CLASS_FLAVOR, TIER_TEXT, XP_PER_LEVEL } from "../data/gameData.js";
+import { ABILITIES, CLASS_FLAVOR, TIER_TEXT } from "../data/gameData.js";
 import { buildSheet, dateKey, formatModifier, streak, tierIndex } from "../lib/scoring.js";
 import StatBlock from "./StatBlock.jsx";
 
@@ -16,7 +16,7 @@ export default function CharacterSheet({ save, onTrain, onRetake, onRename }) {
     setEditing(false);
   };
 
-  const levelProgress = ((sheet.xpTotal % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
+  const levelProgress = ((sheet.xpTotal - sheet.levelStartsAt) / (sheet.nextLevelAt - sheet.levelStartsAt)) * 100;
 
   return (
     <article className="parchment sheet">
@@ -163,7 +163,7 @@ export default function CharacterSheet({ save, onTrain, onRetake, onRename }) {
             {sheet.weaknesses.map((k, i) => (
               <span key={k}>{i > 0 && " and "}<strong>{abilityByKey[k].name}</strong></span>
             ))}
-            . Every 100 XP of training raises an ability by one.
+            . True growth takes weeks of steady work, and the stronger you become, the harder each point is won.
           </p>
         )}
         <div className="foot-actions">

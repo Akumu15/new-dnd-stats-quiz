@@ -10,8 +10,6 @@ import {
   tierIndex,
   characterLevel,
   daysBetween,
-  cooldownDays,
-  lastCompletions,
   streak,
   buildSheet,
   proficiencyBonus,
@@ -54,18 +52,21 @@ describe("computeBaseScores", () => {
 });
 
 describe("training progress", () => {
-  it("adds one point per 100 XP and caps at 20", () => {
+  it("climbs the cost table and caps at 20", () => {
     expect(currentScore(10, 0)).toBe(10);
-    expect(currentScore(10, 250)).toBe(12);
-    expect(currentScore(19, 500)).toBe(20);
+    expect(currentScore(10, 299)).toBe(10);
+    expect(currentScore(10, 600)).toBe(12);
+    expect(currentScore(19, 5000)).toBe(20);
   });
   it("reports progress toward the next point", () => {
-    expect(progressToNextPoint(10, 40)).toBeCloseTo(0.4);
+    expect(progressToNextPoint(10, 150)).toBeCloseTo(0.5);
     expect(progressToNextPoint(20, 0)).toBe(1);
   });
-  it("levels up every 300 total XP", () => {
+  it("levels up on a rising curve", () => {
     expect(characterLevel({ STR: 0 })).toBe(1);
-    expect(characterLevel({ STR: 200, INT: 150 })).toBe(2);
+    expect(characterLevel({ STR: 200, INT: 50 })).toBe(2);
+    expect(characterLevel({ STR: 749 })).toBe(2);
+    expect(characterLevel({ STR: 750 })).toBe(3);
   });
 });
 
@@ -119,26 +120,9 @@ describe("buildSheet", () => {
   });
 });
 
-describe("dates and cooldowns", () => {
+describe("dates", () => {
   it("counts days across month boundaries", () => {
     expect(daysBetween("2026-01-31", "2026-02-01")).toBe(1);
-  });
-  it("lets daily quests repeat the next day and weekly ones after 7", () => {
-    const daily = { freq: "daily" };
-    const weekly = { freq: "weekly" };
-    expect(cooldownDays(daily, "2026-11-23", "2026-11-23")).toBe(1);
-    expect(cooldownDays(daily, "2026-11-22", "2026-11-23")).toBe(0);
-    expect(cooldownDays(weekly, "2026-11-20", "2026-11-23")).toBe(4);
-    expect(cooldownDays(weekly, "2026-11-16", "2026-11-23")).toBe(0);
-    expect(cooldownDays(daily, undefined, "2026-11-23")).toBe(0);
-  });
-  it("finds the latest completion of each quest", () => {
-    const history = [
-      { questId: "a", date: "2026-11-20" },
-      { questId: "a", date: "2026-11-22" },
-      { questId: "b", date: "2026-11-21" },
-    ];
-    expect(lastCompletions(history)).toEqual({ a: "2026-11-22", b: "2026-11-21" });
   });
   it("counts a streak that ends today or yesterday", () => {
     const history = ["2026-11-20", "2026-11-21", "2026-11-22"].map((date) => ({ questId: "x", date }));

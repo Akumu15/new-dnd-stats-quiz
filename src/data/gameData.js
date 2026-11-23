@@ -115,42 +115,6 @@ export const TIER_TEXT = {
   CHA: ["Very shy: people feel hard to reach.", "Reserved: you hold back socially.", "Average presence.", "Engaging: people enjoy your company.", "Magnetic: a natural leader."],
 };
 
-// Training quests. xp = XP earned toward that ability each time one is completed.
-// "daily" quests can be completed once per calendar day; "weekly" ones once per 7 days.
-export const QUESTS = [
-  // STR
-  { id: "str-pushups", stat: "STR", freq: "daily", xp: 10, title: "Push-up set", desc: "Do as many push-ups as you can, then 3 more sets." },
-  { id: "str-squats", stat: "STR", freq: "daily", xp: 10, title: "Squat challenge", desc: "Do 3 sets of 15 bodyweight squats." },
-  { id: "str-plank", stat: "STR", freq: "daily", xp: 10, title: "Hold the line", desc: "Hold a plank 3 times for as long as you can." },
-  { id: "str-workout", stat: "STR", freq: "weekly", xp: 40, title: "Full strength session", desc: "Do a strength workout of 30 minutes or more, at the gym or at home." },
-  // DEX
-  { id: "dex-stretch", stat: "DEX", freq: "daily", xp: 10, title: "Limber up", desc: "Stretch for 10 minutes: hamstrings, hips, shoulders." },
-  { id: "dex-balance", stat: "DEX", freq: "daily", xp: 10, title: "Stork stance", desc: "Balance on each leg for 1 minute, then try it with your eyes closed." },
-  { id: "dex-skill", stat: "DEX", freq: "daily", xp: 15, title: "Practice your craft", desc: "Spend 20 minutes on a hand skill: an instrument, drawing, juggling or a sport." },
-  { id: "dex-sport", stat: "DEX", freq: "weekly", xp: 40, title: "Agility trial", desc: "Play a sport, dance, climb or do yoga for 45 minutes or more." },
-  // CON
-  { id: "con-sleep", stat: "CON", freq: "daily", xp: 15, title: "Long rest", desc: "Get 7 or more hours of sleep. Screens off 30 minutes before bed." },
-  { id: "con-water", stat: "CON", freq: "daily", xp: 10, title: "Potion of hydration", desc: "Drink 8 glasses of water today." },
-  { id: "con-walk", stat: "CON", freq: "daily", xp: 10, title: "Overland travel", desc: "Walk or jog for 30 minutes." },
-  { id: "con-veg", stat: "CON", freq: "daily", xp: 10, title: "Rations of the realm", desc: "Eat vegetables or fruit with at least two meals." },
-  { id: "con-cardio", stat: "CON", freq: "weekly", xp: 40, title: "Endurance run", desc: "Do 45 minutes or more of continuous cardio." },
-  // INT
-  { id: "int-read", stat: "INT", freq: "daily", xp: 15, title: "Study the tomes", desc: "Read a book (not social media) for 20 minutes." },
-  { id: "int-puzzle", stat: "INT", freq: "daily", xp: 10, title: "Riddle of the day", desc: "Solve a puzzle: sudoku, chess tactics, a crossword or a logic problem." },
-  { id: "int-learn", stat: "INT", freq: "daily", xp: 15, title: "Arcane research", desc: "Spend 20 minutes learning a new skill or language." },
-  { id: "int-deep", stat: "INT", freq: "weekly", xp: 40, title: "Master a topic", desc: "Finish a course module, documentary or long article, then summarize it in your own words." },
-  // WIS
-  { id: "wis-meditate", stat: "WIS", freq: "daily", xp: 10, title: "Meditation", desc: "Sit quietly and focus on your breath for 10 minutes." },
-  { id: "wis-journal", stat: "WIS", freq: "daily", xp: 15, title: "Scribe's journal", desc: "Write about your day: what went well and what you'd change." },
-  { id: "wis-nature", stat: "WIS", freq: "daily", xp: 10, title: "Commune with nature", desc: "Spend 15 minutes outside without your phone." },
-  { id: "wis-review", stat: "WIS", freq: "weekly", xp: 40, title: "Council of one", desc: "Review your week: wins, lessons, and one goal for next week." },
-  // CHA
-  { id: "cha-compliment", stat: "CHA", freq: "daily", xp: 10, title: "Kind words", desc: "Give someone a sincere, specific compliment." },
-  { id: "cha-stranger", stat: "CHA", freq: "daily", xp: 15, title: "Talk to a stranger", desc: "Start a short conversation with someone new." },
-  { id: "cha-reach", stat: "CHA", freq: "daily", xp: 10, title: "Send a raven", desc: "Message or call a friend you haven't talked to in a while." },
-  { id: "cha-plan", stat: "CHA", freq: "weekly", xp: 40, title: "Rally the party", desc: "Organize a hangout, game night or group activity." },
-];
-
 // ── Character sheet extras ─────────────────────────────────────────────
 // Skill names come from the 5e System Reference Document 5.1 (CC-BY-4.0, see README).
 export const SKILLS = [
@@ -189,7 +153,5 @@ export const HIT_DIE = {
 // Title by character level (index = level - 1, last one repeats).
 export const TITLES = ["Novice", "Apprentice", "Journeyman", "Adept", "Veteran", "Expert", "Champion", "Hero", "Legend"];
 
-export const XP_PER_POINT = 100; // XP needed in an ability to raise it by 1
 export const MIN_SCORE = 3;
 export const MAX_SCORE = 20;
-export const XP_PER_LEVEL = 300; // total XP across all abilities per character level

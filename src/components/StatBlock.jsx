@@ -1,13 +1,11 @@
-import { XP_PER_POINT, MAX_SCORE } from "../data/gameData.js";
-import { currentScore, formatModifier, modifier, progressToNextPoint } from "../lib/scoring.js";
+import { formatModifier, modifier } from "../lib/scoring.js";
+import { scoreProgress } from "../lib/progression.js";
 
 // An ability box in classic sheet style: name on top, big modifier, score in an oval,
 // and a thin ink line showing XP toward the next point.
 export default function StatBlock({ ability, base, xp = 0, highlight, compact }) {
-  const score = currentScore(base, xp);
+  const { score, into, needed, progress, capped } = scoreProgress(base, xp);
   const gained = score - base;
-  const progress = progressToNextPoint(base, xp);
-  const capped = score >= MAX_SCORE;
   const classes = ["ability-box", highlight && "highlight", compact && "compact"].filter(Boolean).join(" ");
 
   return (
@@ -23,7 +21,7 @@ export default function StatBlock({ ability, base, xp = 0, highlight, compact })
       {capped ? (
         <div className="ability-max">Mastered</div>
       ) : (
-        <div className="ability-xp" title={`${xp % XP_PER_POINT} / ${XP_PER_POINT} XP to the next point`}>
+        <div className="ability-xp" title={`${into} / ${needed} XP to reach ${score + 1}`}>
           <div className="ability-xp-fill" style={{ width: `${progress * 100}%` }} />
         </div>
       )}

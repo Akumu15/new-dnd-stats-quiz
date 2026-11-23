@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ABILITY_KEYS } from "./data/gameData.js";
-import { computeBaseScores, dateKey, questById } from "./lib/scoring.js";
+import { boardFor, computeBaseScores, dateKey, questById } from "./lib/scoring.js";
+import { canClaim } from "./lib/progression.js";
 import { loadSave, writeSave } from "./lib/storage.js";
 import Landing from "./components/Landing.jsx";
 import Quiz from "./components/Quiz.jsx";
@@ -33,29 +34,38 @@ export default function App() {
       base: computeBaseScores(answers),
       xp: emptyXp(),
       history: [],
+      focus: null,
       createdAt: new Date().toISOString(),
     });
     setView("sheet");
   };
 
+  // Claim a quest from today's board. The board and its daily/weekly caps are re-checked here,
+  // so XP can only be earned at the intended pace.
   const completeQuest = (questId) => {
-    const quest = questById(questId);
-    if (!quest) return;
-    setSave((s) => ({
-      ...s,
-      xp: { ...s.xp, [quest.stat]: (s.xp[quest.stat] || 0) + quest.xp },
-      history: [...s.history, { questId, date: dateKey(), xp: quest.xp }],
-    }));
+    const today = dateKey();
+    setSave((s) => {
+      const board = boardFor(s, today);
+      if (!canClaim(questId, board, s.history, today)) return s;
+      const offer = [...board.daily, ...board.weekly].find((o) => o.quest.id === questId);
+      const { stat, freq } = offer.quest;
+      return {
+        ...s,
+        xp: { ...s.xp, [stat]: (s.xp[stat] || 0) + offer.xp },
+        history: [...s.history, { questId, date: today, xp: offer.xp, stat, freq }],
+      };
+    });
   };
 
-  // Undo today's completion of a quest (for misclicks).
+  // Undo a completion made today (for misclicks).
   const undoQuest = (questId) => {
     const today = dateKey();
     setSave((s) => {
       const index = s.history.findLastIndex((h) => h.questId === questId && h.date === today);
       if (index === -1) return s;
       const entry = s.history[index];
-      const stat = questById(questId).stat;
+      const stat = entry.stat || questById(questId)?.stat;
+      if (!stat) return s;
       return {
         ...s,
         xp: { ...s.xp, [stat]: Math.max(0, (s.xp[stat] || 0) - entry.xp) },
@@ -72,6 +82,7 @@ export default function App() {
   };
 
   const rename = (name) => setSave((s) => ({ ...s, name }));
+  const setFocus = (focus) => setSave((s) => ({ ...s, focus }));
 
   return (
     <div className="app">
@@ -103,7 +114,7 @@ export default function App() {
           <CharacterSheet save={save} onTrain={() => setView("train")} onRetake={retake} onRename={rename} />
         )}
         {view === "train" && save && (
-          <Training save={save} onComplete={completeQuest} onUndo={undoQuest} />
+          <Training save={save} onComplete={completeQuest} onUndo={undoQuest} onFocus={setFocus} />
         )}
       </main>
 

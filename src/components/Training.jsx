@@ -1,96 +1,119 @@
-import { useState } from "react";
-import { ABILITIES, QUESTS } from "../data/gameData.js";
-import {
-  cooldownDays,
-  currentScores,
-  dateKey,
-  lastCompletions,
-  questById,
-  streak,
-  weakestAbilities,
-} from "../lib/scoring.js";
-import StatBlock from "./StatBlock.jsx";
+import { ABILITIES, MAX_SCORE } from "../data/gameData.js";
+import { DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS, TIER_NAMES, MAX_FOCUS_XP_PER_WEEK } from "../data/quests.js";
+import { boardFor, currentScores, dateKey, heroFocus, questById, streak } from "../lib/scoring.js";
+import { daysLeftInWeek, periodProgress, questStatus, scoreProgress, weeksAtFullEffort } from "../lib/progression.js";
 
 const abilityByKey = Object.fromEntries(ABILITIES.map((a) => [a.key, a]));
 
-export default function Training({ save, onComplete, onUndo }) {
-  const scores = currentScores(save.base, save.xp);
-  const focus = weakestAbilities(scores);
-  const [filter, setFilter] = useState("focus");
-
+export default function Training({ save, onComplete, onUndo, onFocus }) {
   const today = dateKey();
-  const last = lastCompletions(save.history);
-  const todays = save.history.filter((h) => h.date === today);
-  const todayXp = todays.reduce((s, h) => s + h.xp, 0);
+  const scores = currentScores(save.base, save.xp);
+  const focus = heroFocus(save);
+  const board = boardFor(save, today);
+  const period = periodProgress(save.history, today);
   const days = streak(save.history, today);
+  const weekDaysLeft = daysLeftInWeek(today);
+  const recent = [...save.history].reverse().slice(0, 10);
 
-  const shownStats = filter === "focus" ? focus : filter === "all" ? ABILITIES.map((a) => a.key) : [filter];
-  const recent = [...save.history].reverse().slice(0, 8);
+  const toggleFocus = (key) => {
+    if (focus.includes(key)) {
+      if (focus.length > 1) onFocus(focus.filter((k) => k !== key));
+    } else {
+      onFocus([...focus, key].slice(-MAX_FOCUS));
+    }
+  };
 
   return (
     <div className="board">
       <header className="board-head">
         <h1 className="board-title">The Quest Board</h1>
-        <p className="board-sub">Real deeds, real growth. Complete a quest, claim its XP, and grow stronger.</p>
+        <p className="board-sub">A few honest deeds each day. Real strength is built over seasons, not in a single night.</p>
         <div className="board-stats">
-          <div><strong>{todays.length}</strong><span>quests today</span></div>
-          <div><strong>+{todayXp}</strong><span>XP today</span></div>
+          <div><strong>{period.dailyDone.length}/{DAILY_SLOTS}</strong><span>today's quests</span></div>
+          <div><strong>{period.weeklyDone.length}/{WEEKLY_SLOTS}</strong><span>weekly bounties</span></div>
           <div><strong>{days}</strong><span>day streak</span></div>
         </div>
       </header>
 
-      <div className="filters" role="tablist" aria-label="Filter quests">
-        <FilterButton value="focus" current={filter} onSelect={setFilter}>★ Your path</FilterButton>
-        <FilterButton value="all" current={filter} onSelect={setFilter}>All quests</FilterButton>
-        {ABILITIES.map((a) => (
-          <FilterButton key={a.key} value={a.key} current={filter} onSelect={setFilter}>{a.key}</FilterButton>
-        ))}
-      </div>
-      {filter === "focus" && <p className="board-hint">These quests train your two weakest abilities, where every deed counts most.</p>}
+      {/* ── Focus picker ── */}
+      <section className="parchment focus-panel">
+        <h2 className="section-title">Your Training Focus</h2>
+        <p className="panel-note">
+          Choose up to {MAX_FOCUS} abilities to train. Each day brings a quest for each one, plus a wildcard quest
+          to keep the rest from rusting.
+        </p>
+        <div className="focus-options" role="group" aria-label="Training focus">
+          {ABILITIES.map((a) => {
+            const selected = focus.includes(a.key);
+            const capped = scores[a.key] >= MAX_SCORE;
+            return (
+              <button
+                key={a.key}
+                className={selected ? "focus-chip selected" : "focus-chip"}
+                aria-pressed={selected}
+                disabled={capped && !selected}
+                onClick={() => toggleFocus(a.key)}
+                title={capped ? "Mastered" : undefined}
+              >
+                <span className="focus-abbr">{a.key}</span>
+                <span className="focus-score">{scores[a.key]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
-      {shownStats.map((statKey) => {
-        const ability = abilityByKey[statKey];
-        const quests = QUESTS.filter((q) => q.stat === statKey);
-        return (
-          <section key={statKey} className="quest-row">
-            <div className="quest-row-head">
-              <StatBlock ability={ability} base={save.base[statKey]} xp={save.xp[statKey]} compact />
-              <div>
-                <h2>Trials of {ability.name}</h2>
-                <p>{ability.blurb}</p>
-              </div>
-            </div>
-            <ul className="notices">
-              {quests.map((quest, i) => {
-                const wait = cooldownDays(quest, last[quest.id], today);
-                const doneToday = last[quest.id] === today;
-                return (
-                  <li key={quest.id} className={wait > 0 ? "notice done" : "notice"} style={{ "--tilt": `${((i % 3) - 1) * 0.8}deg` }}>
-                    <span className="pin" aria-hidden="true" />
-                    <div className="notice-kind">{quest.freq === "weekly" ? "Weekly Bounty" : "Daily Deed"}</div>
-                    <h3>{quest.title}</h3>
-                    <p>{quest.desc}</p>
-                    <div className="notice-foot">
-                      {wait === 0 ? (
-                        <button className="btn-seal small" onClick={() => onComplete(quest.id)}>
-                          Claim {quest.xp} XP
-                        </button>
-                      ) : doneToday ? (
-                        <>
-                          <span className="stamp">Completed</span>
-                          <button className="link-ink" onClick={() => onUndo(quest.id)}>undo</button>
-                        </>
-                      ) : (
-                        <span className="stamp muted">Returns in {wait} {wait === 1 ? "day" : "days"}</span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        );
-      })}
+      {/* ── Today's quests ── */}
+      <section className="quest-section">
+        <div className="quest-section-head">
+          <h2>Today's Quests</h2>
+          <span>{period.dailyLeft > 0 ? `${period.dailyLeft} of ${DAILY_SLOTS} remaining · new quests at dawn` : "The day's work is done. Rest, hero."}</span>
+        </div>
+        <ul className="notices">
+          {board.daily.map((offer, i) => (
+            <Notice key={offer.quest.id} offer={offer} index={i} history={save.history} today={today} focus={focus} onComplete={onComplete} onUndo={onUndo} />
+          ))}
+        </ul>
+      </section>
+
+      {/* ── Weekly bounties ── */}
+      <section className="quest-section">
+        <div className="quest-section-head">
+          <h2>This Week's Bounties</h2>
+          <span>{period.weeklyLeft > 0 ? `Posted until Sunday · ${weekDaysLeft} ${weekDaysLeft === 1 ? "day" : "days"} left` : "All bounties claimed. New ones arrive Monday."}</span>
+        </div>
+        <ul className="notices">
+          {board.weekly.map((offer, i) => (
+            <Notice key={offer.quest.id} offer={offer} index={i + 1} history={save.history} today={today} focus={focus} onComplete={onComplete} onUndo={onUndo} />
+          ))}
+        </ul>
+      </section>
+
+      {/* ── Long road ── */}
+      <article className="parchment road">
+        <h2 className="section-title">The Long Road</h2>
+        <p className="panel-note">
+          Each point is harder won than the last. At full focus, an ability earns about {MAX_FOCUS_XP_PER_WEEK} XP a week.
+        </p>
+        <ul className="road-list">
+          {ABILITIES.map((a) => {
+            const p = scoreProgress(save.base[a.key], save.xp[a.key]);
+            const weeks = p.capped ? 0 : weeksAtFullEffort(p.needed - p.into);
+            return (
+              <li key={a.key} className={focus.includes(a.key) ? "in-focus" : undefined}>
+                <span className="road-name">{a.name}</span>
+                <span className="road-score">{p.score}</span>
+                <div className="road-bar" title={p.capped ? "Mastered" : `${p.into} / ${p.needed} XP`}>
+                  <div className="road-fill" style={{ width: `${p.progress * 100}%` }} />
+                </div>
+                <span className="road-eta">
+                  {p.capped ? "Mastered" : `${p.into}/${p.needed} XP · ~${weeks} ${weeks === 1 ? "week" : "weeks"} to ${p.score + 1}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </article>
 
       {recent.length > 0 && (
         <article className="parchment chronicle">
@@ -101,8 +124,8 @@ export default function Training({ save, onComplete, onUndo }) {
               return (
                 <li key={`${h.questId}-${h.date}-${i}`}>
                   <span className="log-date">{h.date}</span>
-                  <span>{quest ? quest.title : h.questId}</span>
-                  <span className="log-xp">+{h.xp} {quest?.stat}</span>
+                  <span>{quest ? quest.title.replace("Bounty: ", "") : "A forgotten deed"}</span>
+                  <span className="log-xp">+{h.xp} {h.stat || quest?.stat}</span>
                 </li>
               );
             })}
@@ -113,15 +136,34 @@ export default function Training({ save, onComplete, onUndo }) {
   );
 }
 
-function FilterButton({ value, current, onSelect, children }) {
+function Notice({ offer, index, history, today, focus, onComplete, onUndo }) {
+  const { quest, tier, task, xp } = offer;
+  const status = questStatus(quest.id, history, today);
+  const doneToday = status === "done" && history.some((h) => h.questId === quest.id && h.date === today);
+  const ability = abilityByKey[quest.stat];
+  const wildcard = quest.freq === "daily" && !focus.includes(quest.stat);
+
   return (
-    <button
-      role="tab"
-      aria-selected={current === value}
-      className={current === value ? "filter active" : "filter"}
-      onClick={() => onSelect(value)}
-    >
-      {children}
-    </button>
+    <li className={`notice ${status}`} style={{ "--tilt": `${((index % 3) - 1) * 0.8}deg` }}>
+      <span className="pin" aria-hidden="true" />
+      <div className="notice-kind">
+        {quest.freq === "weekly" ? "Weekly Bounty" : wildcard ? "Wildcard Deed" : "Daily Deed"}
+      </div>
+      <h3>{quest.title.replace("Bounty: ", "")}</h3>
+      <div className="notice-meta">{ability.name} · {TIER_NAMES[tier]}</div>
+      <p>{task}</p>
+      <div className="notice-foot">
+        {status === "available" && (
+          <button className="btn-seal small" onClick={() => onComplete(quest.id)}>Claim {xp} XP</button>
+        )}
+        {status === "done" && (
+          <>
+            <span className="stamp">Completed</span>
+            {doneToday && <button className="link-ink" onClick={() => onUndo(quest.id)}>undo</button>}
+          </>
+        )}
+        {status === "locked" && <span className="stamp muted">Quota reached</span>}
+      </div>
+    </li>
   );
 }

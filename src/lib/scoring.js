@@ -2,16 +2,16 @@ import {
   ABILITY_KEYS,
   QUESTIONS,
   CLASS_BY_PAIR,
-  QUESTS,
-  XP_PER_POINT,
   MIN_SCORE,
   MAX_SCORE,
-  XP_PER_LEVEL,
   SKILLS,
   BACKGROUND_BY_STAT,
   HIT_DIE,
   TITLES,
 } from "../data/gameData.js";
+import { scoreProgress, levelForXp, levelThreshold, generateBoard, normalizeFocus } from "./progression.js";
+
+export { questById } from "../data/quests.js";
 
 const MAX_ANSWER = 4;
 
@@ -46,15 +46,14 @@ export function computeBaseScores(answers, questions = QUESTIONS) {
   return Object.fromEntries(ABILITY_KEYS.map((k) => [k, rawToScore(raw[k], max[k])]));
 }
 
-/** Score after training: base plus one point per XP_PER_POINT XP, capped at 20. */
+/** Score after training: XP climbs the cost table in data/quests.js (higher scores cost more). */
 export function currentScore(base, xp = 0) {
-  return Math.min(MAX_SCORE, base + Math.floor(xp / XP_PER_POINT));
+  return scoreProgress(base, xp).score;
 }
 
 /** Progress (0–1) toward the next point in an ability. 1 when capped. */
 export function progressToNextPoint(base, xp = 0) {
-  if (currentScore(base, xp) >= MAX_SCORE) return 1;
-  return (xp % XP_PER_POINT) / XP_PER_POINT;
+  return scoreProgress(base, xp).progress;
 }
 
 export function currentScores(base, xp) {
@@ -96,7 +95,7 @@ export function totalXp(xp) {
 }
 
 export function characterLevel(xp) {
-  return 1 + Math.floor(totalXp(xp) / XP_PER_LEVEL);
+  return levelForXp(totalXp(xp));
 }
 
 // ── Dates ──────────────────────────────────────────────────────────────
@@ -115,22 +114,6 @@ export function daysBetween(a, b) {
   const [by, bm, bd] = b.split("-").map(Number);
   const ms = Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad);
   return Math.round(ms / 86400000);
-}
-
-/** Days until a quest can be done again (0 = available now). */
-export function cooldownDays(quest, lastDoneKey, todayKey) {
-  if (!lastDoneKey) return 0;
-  const period = quest.freq === "weekly" ? 7 : 1;
-  return Math.max(0, period - daysBetween(lastDoneKey, todayKey));
-}
-
-/** Most recent completion date for each quest, from the history log. */
-export function lastCompletions(history) {
-  const last = {};
-  for (const entry of history) {
-    if (!last[entry.questId] || entry.date > last[entry.questId]) last[entry.questId] = entry.date;
-  }
-  return last;
 }
 
 /** Consecutive days (ending today or yesterday) with at least one quest done. */
@@ -153,8 +136,22 @@ function shiftKey(key, deltaDays) {
   return dateKey(new Date(y, m - 1, d + deltaDays));
 }
 
-export function questById(id) {
-  return QUESTS.find((q) => q.id === id);
+// ── Quest board for a saved hero ─────────────────────────────────────────
+
+/** The hero's chosen focus, or their two weakest abilities by default. */
+export function heroFocus(save) {
+  const scores = currentScores(save.base, save.xp);
+  const fallback = weakestAbilities(scores);
+  return normalizeFocus(save.focus, fallback.length ? fallback : ["STR"]);
+}
+
+export function boardFor(save, today) {
+  return generateBoard({
+    focus: heroFocus(save),
+    scores: currentScores(save.base, save.xp),
+    seed: save.createdAt || "hero",
+    today,
+  });
 }
 
 // ── Full character sheet ─────────────────────────────────────────────────
@@ -201,7 +198,8 @@ export function buildSheet(save) {
     title: TITLES[Math.min(level, TITLES.length) - 1],
     background: BACKGROUND_BY_STAT[ranked[0]],
     xpTotal: totalXp(save.xp),
-    nextLevelAt: level * XP_PER_LEVEL,
+    levelStartsAt: levelThreshold(level),
+    nextLevelAt: levelThreshold(level + 1),
     proficiencyBonus: pb,
     saves,
     skills,

@@ -311,6 +311,45 @@ p { margin: 0 0 0.6em; }
 }
 .stamp.muted { color: var(--ink-soft); border-color: var(--ink-soft); font-size: 0.7rem; }
 
+/* Focus picker */
+.focus-panel { padding: 24px 28px; margin-bottom: 8px; }
+.panel-note { text-align: center; color: var(--ink-soft); font-style: italic; max-width: 600px; margin: 0 auto 14px; }
+.focus-options { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.focus-chip {
+  display: flex; flex-direction: column; align-items: center; min-width: 68px; padding: 6px 10px 4px;
+  border: 1.5px solid var(--ink); border-radius: 8px 8px 16px 16px; background: rgba(255, 250, 235, 0.45);
+  transition: transform 0.08s, background 0.15s;
+}
+.focus-chip:hover:not(:disabled):not(.selected) { background: rgba(255, 250, 235, 0.85); }
+.focus-chip.selected { background: radial-gradient(circle at 35% 30%, var(--blood-2), var(--blood) 70%); color: #fbe9c9; border-color: #5e0f0f; }
+.focus-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.focus-abbr { font-family: var(--display); font-weight: 900; letter-spacing: 0.08em; font-size: 0.9rem; }
+.focus-score { font-family: var(--display); font-size: 0.75rem; opacity: 0.85; }
+
+/* Board sections */
+.quest-section { margin-top: 30px; }
+.quest-section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+.quest-section-head h2 { font-family: var(--display); font-size: 1.3rem; color: var(--gold-light); text-shadow: 0 1px 0 #000; }
+.quest-section-head span { color: #cbb68f; font-style: italic; font-size: 0.95rem; }
+.notice-meta { text-align: center; font-size: 0.8rem; font-style: italic; color: var(--ink-faint); margin: -4px 0 8px; }
+.notice.locked { filter: grayscale(0.4) brightness(0.8); }
+
+/* Long road */
+.road { margin-top: 34px; padding: 26px 30px; }
+.road-list { list-style: none; margin: 0; padding: 0; }
+.road-list li {
+  display: grid; grid-template-columns: 120px 34px 1fr auto; align-items: center; gap: 12px;
+  padding: 7px 0; border-bottom: 1px dotted var(--ink-faint);
+}
+.road-list li:last-child { border-bottom: 0; }
+.road-list li.in-focus .road-name { color: var(--blood); }
+.road-list li.in-focus .road-name::after { content: " ★"; font-size: 0.75em; }
+.road-name { font-family: var(--display); font-weight: 700; font-size: 0.9rem; }
+.road-score { font-family: var(--display); font-weight: 900; font-size: 1.15rem; text-align: center; }
+.road-bar { height: 8px; border: 1px solid var(--ink-faint); border-radius: 4px; overflow: hidden; background: rgba(255, 250, 235, 0.4); }
+.road-fill { height: 100%; background: linear-gradient(90deg, var(--blood), var(--blood-2)); }
+.road-eta { font-size: 0.85rem; color: var(--ink-soft); font-style: italic; white-space: nowrap; }
+
 .chronicle { margin-top: 34px; padding: 26px 30px; }
 .chronicle ul { list-style: none; margin: 0; padding: 0; }
 .chronicle li { display: flex; gap: 14px; padding: 5px 0; border-bottom: 1px dotted var(--ink-faint); }
@@ -337,6 +376,10 @@ p { margin: 0 0 0.6em; }
   .candle span { font-size: 0.6rem; }
   .quest-row-head { flex-direction: column; text-align: center; }
   .notices { grid-template-columns: 1fr; }
+  .road-list li { grid-template-columns: 1fr auto; row-gap: 4px; }
+  .road-bar { grid-column: 1 / -1; }
+  .road-eta { grid-column: 1 / -1; white-space: normal; }
+  .focus-panel, .road, .chronicle { padding: 22px 18px; }
   .divider::before, .divider::after { width: 50px; }
 }
 
