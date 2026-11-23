@@ -45,9 +45,10 @@ Each Trial can be taken once every 30 days and earns 25 XP. Results map to a sco
 
 Growth is meant to feel like real life: steady, and slower the better you get.
 
-- **Focus:** pick up to 2 abilities to train (the default is your two weakest).
-- **Each day:** 3 quests. Each focus ability gets exactly one, and the rest are *wildcards* from other abilities (lower scores come up more often). Only 3 dailies can be claimed per day, so changing your focus doesn't unlock more, and focusing on a single ability doesn't double its XP.
-- **Each week (Mon–Sun):** 2 bounties, one per focus ability (wildcards fill any gap). Daily quests are worth 10 XP and bounties 35 XP.
+- **Focus:** choose 1 to 3 abilities to grow (the default is your two weakest).
+- **Each day:** 3 quests. **2 come from your chosen abilities**, so they're always the majority, and **1 is a wildcard** from another ability (lower scores come up more often). With 3 choices, the two focus slots rotate among them; with 1 choice, it gets two different quests. Only 3 dailies can be claimed per day, so changing your focus doesn't unlock more.
+- **Each week (Mon–Sun):** 2 bounties for your chosen abilities (a single choice gets one bounty plus a wildcard). Daily quests are worth 10 XP and bounties 35 XP.
+- **Weekly training limit:** an ability absorbs at most **105 XP a week** from quests (`WEEKLY_STAT_XP_CAP`), so focusing on one ability can't speed it past the intended pace. XP beyond the limit still counts toward character level and the party boss.
 - **Quests scale with you:** every quest has Novice (score 3–9), Adept (10–14) and Expert (15–20) versions. For example, 5 push-ups, then 12, then 20.
 - **Points cost more as you climb** (`XP_TO_NEXT` in `src/data/quests.js`):
 

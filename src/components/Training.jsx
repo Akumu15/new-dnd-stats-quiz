@@ -1,7 +1,24 @@
 import { ABILITIES, MAX_SCORE } from "../data/gameData.js";
-import { DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS, TIER_NAMES, MAX_FOCUS_XP_PER_WEEK } from "../data/quests.js";
+import {
+  DAILY_SLOTS,
+  FOCUS_DAILY_SLOTS,
+  WEEKLY_SLOTS,
+  MAX_FOCUS,
+  TIER_NAMES,
+  MAX_FOCUS_XP_PER_WEEK,
+  WEEKLY_STAT_XP_CAP,
+} from "../data/quests.js";
 import { boardFor, currentScores, dateKey, heroFocus, questById, streak } from "../lib/scoring.js";
-import { daysLeftInWeek, formatWeeks, periodProgress, questStatus, scoreProgress, weeksAtFullEffort } from "../lib/progression.js";
+import {
+  daysLeftInWeek,
+  formatWeeks,
+  periodProgress,
+  questStatus,
+  scoreProgress,
+  statRoomThisWeek,
+  statXpThisWeek,
+  weeksAtFullEffort,
+} from "../lib/progression.js";
 
 const abilityByKey = Object.fromEntries(ABILITIES.map((a) => [a.key, a]));
 
@@ -14,6 +31,7 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
   const days = streak(save.history, today);
   const weekDaysLeft = daysLeftInWeek(today);
   const recent = [...save.history].reverse().slice(0, 10);
+  const weekXp = Object.fromEntries(ABILITIES.map((a) => [a.key, statXpThisWeek(save.history, a.key, today)]));
 
   const toggleFocus = (key) => {
     if (focus.includes(key)) {
@@ -39,8 +57,8 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
       <section className="parchment focus-panel">
         <h2 className="section-title">Your Training Focus</h2>
         <p className="panel-note">
-          Choose up to {MAX_FOCUS} abilities to train. Each day brings a quest for each one, plus a wildcard quest
-          to keep the rest from rusting.
+          Choose 1 to {MAX_FOCUS} abilities you want to grow. Each day, {FOCUS_DAILY_SLOTS} of your {DAILY_SLOTS} quests
+          come from your choices, and one is a wildcard to keep the rest from rusting.
         </p>
         <div className="focus-options" role="group" aria-label="Training focus">
           {ABILITIES.map((a) => {
@@ -57,10 +75,17 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
               >
                 <span className="focus-abbr">{a.key}</span>
                 <span className="focus-score">{scores[a.key]}</span>
+                <span className="focus-meter" title={`${weekXp[a.key]} / ${WEEKLY_STAT_XP_CAP} XP trained into ${a.name} this week`}>
+                  <span style={{ width: `${(weekXp[a.key] / WEEKLY_STAT_XP_CAP) * 100}%` }} />
+                </span>
               </button>
             );
           })}
         </div>
+        <p className="fineprint focus-fine">
+          The bar under each ability is this week's training. An ability can absorb {WEEKLY_STAT_XP_CAP} XP a week; quests
+          beyond that still count toward your level and your party's boss.
+        </p>
       </section>
 
       {/* ── Today's quests ── */}
@@ -161,6 +186,11 @@ function Notice({ offer, index, history, today, focus, onComplete, onUndo }) {
       <h3>{quest.title.replace("Bounty: ", "")}</h3>
       <div className="notice-meta">{ability.name} · {TIER_NAMES[tier]}</div>
       <p>{task}</p>
+      {status === "available" && statRoomThisWeek(history, quest.stat, today) < xp && (
+        <p className="limit-note">
+          {ability.name} is near its weekly training limit, so this quest counts mostly toward your level and the party boss.
+        </p>
+      )}
       <div className="notice-foot">
         {status === "available" && (
           <button className="btn-seal small" onClick={() => onComplete(quest.id)}>Claim {xp} XP</button>

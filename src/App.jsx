@@ -5,7 +5,7 @@ import { useCardPublisher, useCloud } from "./lib/useCloud.js";
 import { postFeed } from "./lib/cloud.js";
 import { isValidCode, normalizeCode } from "./lib/party.js";
 import Party from "./components/Party.jsx";
-import { canClaim } from "./lib/progression.js";
+import { claimQuest } from "./lib/progression.js";
 import { recalibrate, trialAvailability } from "./lib/trials.js";
 import { decodeShare } from "./lib/share.js";
 import { loadSave, writeSave } from "./lib/storage.js";
@@ -100,17 +100,7 @@ export default function App() {
   // so XP can only be earned at the intended pace.
   const completeQuest = (questId) => {
     const today = dateKey();
-    setSave((s) => {
-      const board = boardFor(s, today);
-      if (!canClaim(questId, board, s.history, today)) return s;
-      const offer = [...board.daily, ...board.weekly].find((o) => o.quest.id === questId);
-      const { stat, freq } = offer.quest;
-      return {
-        ...s,
-        xp: { ...s.xp, [stat]: (s.xp[stat] || 0) + offer.xp },
-        history: [...s.history, { questId, date: today, xp: offer.xp, stat, freq }],
-      };
-    });
+    setSave((s) => claimQuest(s, questId, boardFor(s, today), today));
   };
 
   // Undo a completion made today (for misclicks).
@@ -124,7 +114,7 @@ export default function App() {
       if (!stat) return s;
       return {
         ...s,
-        xp: { ...s.xp, [stat]: Math.max(0, (s.xp[stat] || 0) - entry.xp) },
+        xp: { ...s.xp, [stat]: Math.max(0, (s.xp[stat] || 0) - (entry.statXp ?? entry.xp)) },
         history: s.history.filter((_, i) => i !== index),
       };
     });

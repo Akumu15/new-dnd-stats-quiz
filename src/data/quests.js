@@ -20,8 +20,9 @@
 export const DAILY_XP = 10;
 export const WEEKLY_XP = 35;
 export const DAILY_SLOTS = 3; // daily quests offered (and completable) per day
+export const FOCUS_DAILY_SLOTS = 2; // of those, how many come from the hero's chosen abilities
 export const WEEKLY_SLOTS = 2; // bounties offered (and completable) per week
-export const MAX_FOCUS = 2;
+export const MAX_FOCUS = 3; // abilities a hero can choose to focus on
 
 /** XP needed to go from score s to s + 1. Index = current score. */
 export const XP_TO_NEXT = {
@@ -40,6 +41,13 @@ export const XP_TO_NEXT = {
 
 /** Best-case XP a single focused ability can earn in a week (1 daily/day + 1 bounty). */
 export const MAX_FOCUS_XP_PER_WEEK = 7 * DAILY_XP + WEEKLY_XP;
+
+/**
+ * Most quest XP one ability can absorb per week. Focusing on a single ability puts it on
+ * the board twice a day, so this keeps every ability on the same slow pace. Extra quests
+ * still count toward character level and the party boss.
+ */
+export const WEEKLY_STAT_XP_CAP = MAX_FOCUS_XP_PER_WEEK;
 
 export const TIER_NAMES = ["Novice", "Adept", "Expert"];
 

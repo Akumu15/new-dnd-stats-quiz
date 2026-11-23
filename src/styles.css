@@ -333,6 +333,10 @@ p { margin: 0 0 0.6em; }
 .focus-chip:disabled { opacity: 0.45; cursor: not-allowed; }
 .focus-abbr { font-family: var(--display); font-weight: 900; letter-spacing: 0.08em; font-size: 0.9rem; }
 .focus-score { font-family: var(--display); font-size: 0.75rem; opacity: 0.85; }
+.focus-meter { display: block; width: 100%; height: 4px; margin: 3px 0 2px; border-radius: 2px; background: rgba(90, 60, 25, 0.2); overflow: hidden; }
+.focus-meter span { display: block; height: 100%; background: currentColor; opacity: 0.8; }
+.focus-fine { text-align: center; margin-top: 12px; }
+.limit-note { font-size: 0.85rem !important; font-style: italic; color: var(--blood) !important; flex: 0 !important; }
 
 /* Board sections */
 .quest-section { margin-top: 30px; }

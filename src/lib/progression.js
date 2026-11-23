@@ -9,6 +9,8 @@ import {
   WEEKLY_SLOTS,
   MAX_FOCUS,
   MAX_FOCUS_XP_PER_WEEK,
+  FOCUS_DAILY_SLOTS,
+  WEEKLY_STAT_XP_CAP,
   questById,
   tierForScore,
 } from "../data/quests.js";
@@ -136,11 +138,30 @@ function offer(quest, scores) {
   };
 }
 
+function shuffled(rng, list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Which focus abilities fill the `count` focus slots (repeating if there are fewer picks). */
+function focusSlots(rng, focus, count) {
+  const order = shuffled(rng, focus);
+  return Array.from({ length: count }, (_, i) => order[i % order.length]);
+}
+
 /**
  * Build the quests on offer today.
- *  • Daily (3): one per focus ability, the rest "wildcards" from other abilities,
- *    favoring lower scores so no ability is forgotten.
- *  • Weekly (2): one bounty per focus ability, the rest wildcards.
+ *  • Daily (3): FOCUS_DAILY_SLOTS (2) come from the hero's chosen abilities, so most of
+ *    the board is what they asked for, and the rest are "wildcards" from other abilities,
+ *    favoring lower scores so no ability is forgotten. With 3 picks, the two focus slots
+ *    rotate among them day to day; with 1 pick, both are that ability (different quests).
+ *  • Weekly (2): bounties for the chosen abilities; with a single pick, one is a wildcard.
+ * Growth stays at the intended pace because each ability can absorb at most
+ * WEEKLY_STAT_XP_CAP per week (see claimQuest).
  * The same seed, day and focus always produce the same board.
  */
 export function generateBoard({ focus, scores, seed, today }) {
@@ -148,8 +169,6 @@ export function generateBoard({ focus, scores, seed, today }) {
   const dayRng = mulberry32(hashString(`${seed}|day|${today}`));
   const weekRng = mulberry32(hashString(`${seed}|week|${week}`));
 
-  // Each focus ability gets exactly one daily slot and one bounty, so focusing on a single
-  // ability never doubles its XP. Leftover slots become wildcards from other abilities.
   const others = ABILITY_KEYS.filter((k) => !focus.includes(k));
   const wildcards = (rng, count) => {
     const pool = [...others];
@@ -161,7 +180,7 @@ export function generateBoard({ focus, scores, seed, today }) {
     }
     return picked;
   };
-  const dailySlots = [...focus.slice(0, DAILY_SLOTS - 1)];
+  const dailySlots = focusSlots(dayRng, focus, FOCUS_DAILY_SLOTS);
   dailySlots.push(...wildcards(dayRng, DAILY_SLOTS - dailySlots.length));
 
   const usedDaily = new Set();
@@ -172,7 +191,8 @@ export function generateBoard({ focus, scores, seed, today }) {
     return offer(quest, scores);
   });
 
-  const weeklySlots = [...focus.slice(0, WEEKLY_SLOTS)];
+  // One bounty per distinct pick (up to 2); a single pick gets one bounty plus a wildcard.
+  const weeklySlots = shuffled(weekRng, focus).slice(0, WEEKLY_SLOTS);
   weeklySlots.push(...wildcards(weekRng, WEEKLY_SLOTS - weeklySlots.length));
   const usedWeekly = new Set();
   const weekly = weeklySlots.slice(0, WEEKLY_SLOTS).map((stat) => {
@@ -220,4 +240,39 @@ export function questStatus(questId, history, today) {
 export function canClaim(questId, board, history, today) {
   const onBoard = [...board.daily, ...board.weekly].some((o) => o.quest.id === questId);
   return onBoard && questStatus(questId, history, today) === "available";
+}
+
+// ── Weekly training limit per ability ─────────────────────────────────
+
+/** Quest XP that actually went into `stat` this week (Trials and loot are separate). */
+export function statXpThisWeek(history, stat, today) {
+  const week = weekKey(today);
+  return (history || []).reduce((sum, h) => {
+    const freq = entryFreq(h);
+    if ((freq !== "daily" && freq !== "weekly") || weekKey(h.date) !== week) return sum;
+    if ((h.stat || questById(h.questId)?.stat) !== stat) return sum;
+    return sum + (h.statXp ?? h.xp ?? 0);
+  }, 0);
+}
+
+/** XP an ability can still absorb from quests this week. */
+export function statRoomThisWeek(history, stat, today) {
+  return Math.max(0, WEEKLY_STAT_XP_CAP - statXpThisWeek(history, stat, today));
+}
+
+/**
+ * Claim a quest: returns the updated save, or the same save if the claim isn't allowed.
+ * The full XP always counts toward level and the party boss (history `xp`), but only
+ * what fits under the ability's weekly limit raises the ability (`statXp`).
+ */
+export function claimQuest(save, questId, board, today) {
+  if (!canClaim(questId, board, save.history, today)) return save;
+  const o = [...board.daily, ...board.weekly].find((x) => x.quest.id === questId);
+  const { stat, freq } = o.quest;
+  const statXp = Math.min(o.xp, statRoomThisWeek(save.history, stat, today));
+  return {
+    ...save,
+    xp: { ...save.xp, [stat]: (save.xp[stat] || 0) + statXp },
+    history: [...save.history, { questId, date: today, xp: o.xp, statXp, stat, freq }],
+  };
 }

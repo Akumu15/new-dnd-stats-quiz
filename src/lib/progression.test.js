@@ -10,8 +10,11 @@ import {
   canClaim,
   normalizeFocus,
   formatWeeks,
+  claimQuest,
+  statXpThisWeek,
+  statRoomThisWeek,
 } from "./progression.js";
-import { QUESTS, DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS_XP_PER_WEEK } from "../data/quests.js";
+import { QUESTS, DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS_XP_PER_WEEK, WEEKLY_STAT_XP_CAP } from "../data/quests.js";
 import { ABILITY_KEYS } from "../data/gameData.js";
 import { currentScores, dateKey } from "./scoring.js";
 
@@ -64,14 +67,30 @@ describe("calendar", () => {
 describe("generateBoard", () => {
   const args = { focus: ["STR", "INT"], scores: baseScores, seed: "s", today: "2026-11-24" };
 
-  it("offers 3 daily quests (one per focus + a wildcard) and 2 bounties", () => {
+  const statsOf = (offers) => offers.map((o) => o.quest.stat);
+
+  it("offers 3 daily quests (2 from the chosen abilities + a wildcard) and 2 bounties", () => {
     const board = generateBoard(args);
     expect(board.daily).toHaveLength(DAILY_SLOTS);
     expect(board.weekly).toHaveLength(WEEKLY_SLOTS);
-    expect(board.daily[0].quest.stat).toBe("STR");
-    expect(board.daily[1].quest.stat).toBe("INT");
+    expect(statsOf(board.daily.slice(0, 2)).sort()).toEqual(["INT", "STR"]);
     expect(["STR", "INT"]).not.toContain(board.daily[2].quest.stat);
-    expect(board.weekly.map((o) => o.quest.stat)).toEqual(["STR", "INT"]);
+    expect(statsOf(board.weekly).sort()).toEqual(["INT", "STR"]);
+  });
+  it("makes the chosen abilities the majority, but never the whole board", () => {
+    for (const focus of [["CHA"], ["STR", "INT"], ["STR", "DEX", "WIS"]]) {
+      for (let d = 23; d <= 29; d++) {
+        const stats = statsOf(generateBoard({ ...args, focus, today: `2026-11-${d}` }).daily);
+        expect(stats.filter((s) => focus.includes(s)).length).toBe(2);
+        expect(stats.filter((s) => !focus.includes(s)).length).toBe(1);
+      }
+    }
+  });
+  it("rotates three chosen abilities across the week", () => {
+    const focus = ["STR", "DEX", "WIS"];
+    const seen = new Set();
+    for (let d = 23; d <= 29; d++) statsOf(generateBoard({ ...args, focus, today: `2026-11-${d}` }).daily.slice(0, 2)).forEach((s) => seen.add(s));
+    expect([...seen].sort()).toEqual(["DEX", "STR", "WIS"]);
   });
   it("is stable within a day and changes across days", () => {
     const ids = (b) => b.daily.map((o) => o.quest.id).join();
@@ -80,22 +99,22 @@ describe("generateBoard", () => {
     expect(new Set(week).size).toBeGreaterThan(1);
   });
   it("scales the task to the hero's score", () => {
-    const low = generateBoard({ ...args, scores: { ...baseScores, STR: 6 } }).daily[0];
-    const high = generateBoard({ ...args, scores: { ...baseScores, STR: 17 } }).daily[0];
+    const strOffer = (scores) => generateBoard({ ...args, scores }).daily.find((o) => o.quest.stat === "STR");
+    const low = strOffer({ ...baseScores, STR: 6 });
+    const high = strOffer({ ...baseScores, STR: 17 });
     expect(low.tier).toBe(0);
     expect(high.tier).toBe(2);
     expect(low.task).not.toBe(high.task);
   });
-  it("never doubles up when only one ability is in focus", () => {
+  it("gives a single chosen ability two different daily quests and one bounty", () => {
     const board = generateBoard({ ...args, focus: ["CHA"] });
-    expect(board.daily.filter((o) => o.quest.stat === "CHA")).toHaveLength(1);
+    const cha = board.daily.filter((o) => o.quest.stat === "CHA");
+    expect(cha).toHaveLength(2);
+    expect(cha[0].quest.id).not.toBe(cha[1].quest.id);
     expect(board.weekly.filter((o) => o.quest.stat === "CHA")).toHaveLength(1);
-    expect(board.daily).toHaveLength(DAILY_SLOTS);
-    expect(board.weekly).toHaveLength(WEEKLY_SLOTS);
-    expect(new Set(board.daily.map((o) => o.quest.stat)).size).toBe(3);
   });
   it("normalizes focus", () => {
-    expect(normalizeFocus(["STR", "STR", "XYZ", "INT", "WIS"], ["CHA"])).toEqual(["STR", "INT"]);
+    expect(normalizeFocus(["STR", "STR", "XYZ", "INT", "WIS", "CHA"], ["CHA"])).toEqual(["STR", "INT", "WIS"]);
     expect(normalizeFocus(null, ["CHA"])).toEqual(["CHA"]);
   });
 });
@@ -124,13 +143,40 @@ function simulate({ base, focus, days, start = new Date(2026, 0, 5) }) {
     const today = dateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + d));
     const board = generateBoard({ focus, scores: currentScores(save.base, save.xp), seed: "sim", today });
     for (const offer of [...board.daily, ...board.weekly]) {
-      if (!canClaim(offer.quest.id, board, save.history, today)) continue;
-      save.xp[offer.quest.stat] += offer.xp;
-      save.history.push({ questId: offer.quest.id, date: today, xp: offer.xp, stat: offer.quest.stat, freq: offer.quest.freq });
+      Object.assign(save, claimQuest(save, offer.quest.id, board, today)); // same logic as the app
     }
   }
   return { scores: currentScores(save.base, save.xp), save };
 }
+
+describe("weekly training limit", () => {
+  it("caps what an ability absorbs, but keeps full XP for level and boss", () => {
+    const today = "2026-11-26";
+    const history = [
+      { questId: "str-pushups", date: "2026-11-23", xp: 10, statXp: 10, stat: "STR", freq: "daily" },
+      { questId: "str-session", date: "2026-11-24", xp: 35, statXp: 35, stat: "STR", freq: "weekly" },
+      { questId: "str-squats", date: "2026-11-25", xp: 10, statXp: 10, stat: "STR", freq: "daily" },
+      { questId: "str-plank", date: "2026-11-16", xp: 10, stat: "STR", freq: "daily" }, // last week
+    ];
+    expect(statXpThisWeek(history, "STR", today)).toBe(55);
+    expect(statRoomThisWeek(history, "STR", today)).toBe(WEEKLY_STAT_XP_CAP - 55);
+
+    const full = Array.from({ length: 10 }, (_, i) => ({ questId: "str-grip", date: `2026-11-2${3 + (i % 4)}`, xp: 10, statXp: 10, stat: "STR", freq: "daily" }));
+    const board = generateBoard({ focus: ["STR"], scores: baseScores, seed: "s", today });
+    const strOffer = board.daily.find((o) => o.quest.stat === "STR");
+    const save = { base: baseScores, xp: { STR: 100 }, history: full.slice(0, 10) };
+    const after = claimQuest(save, strOffer.quest.id, board, today);
+    const entry = after.history.at(-1);
+    expect(entry.xp).toBe(10); // counts toward level and boss
+    expect(entry.statXp).toBe(5); // only 5 XP of room left this week (100 used)
+    expect(after.xp.STR).toBe(105);
+  });
+  it("ignores claims that aren't on the board", () => {
+    const board = generateBoard({ focus: ["STR"], scores: baseScores, seed: "s", today: "2026-11-26" });
+    const save = { base: baseScores, xp: {}, history: [] };
+    expect(claimQuest(save, "cha-kind-not-real", board, "2026-11-26")).toBe(save);
+  });
+});
 
 describe("balance", () => {
   it("never gives a focused ability more than ~105 XP in a week", () => {
@@ -139,9 +185,16 @@ describe("balance", () => {
     expect(save.xp.STR).toBeLessThanOrEqual(MAX_FOCUS_XP_PER_WEEK);
     expect(save.history.filter((h) => h.freq === "daily")).toHaveLength(7 * DAILY_SLOTS);
   });
-  it("gives no extra XP for focusing on a single ability", () => {
+  it("gives no extra ability growth for focusing on a single ability", () => {
     const { save } = simulate({ base: baseScores, focus: ["STR"], days: 7 * 8 });
     expect(save.xp.STR).toBe(8 * MAX_FOCUS_XP_PER_WEEK);
+    // …but the extra quests still count toward level and the party boss.
+    const strQuestXp = save.history.filter((h) => h.stat === "STR").reduce((s, h) => s + h.xp, 0);
+    expect(strQuestXp).toBeGreaterThan(8 * MAX_FOCUS_XP_PER_WEEK);
+  });
+  it("keeps three chosen abilities on the same slow pace", () => {
+    const { save } = simulate({ base: baseScores, focus: ["STR", "DEX", "WIS"], days: 7 * 4 });
+    for (const k of ["STR", "DEX", "WIS"]) expect(save.xp[k]).toBeLessThanOrEqual(4 * MAX_FOCUS_XP_PER_WEEK);
   });
   it("can't take Strength from 12 to 15 in a week, or even a month", () => {
     expect(simulate({ base: baseScores, focus: ["STR", "INT"], days: 7 }).scores.STR).toBe(12);
