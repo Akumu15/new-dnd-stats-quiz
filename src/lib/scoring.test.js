@@ -1,0 +1,139 @@
+import { describe, it, expect } from "vitest";
+import {
+  rawToScore,
+  modifier,
+  computeBaseScores,
+  currentScore,
+  progressToNextPoint,
+  pickClass,
+  weakestAbilities,
+  tierIndex,
+  characterLevel,
+  daysBetween,
+  streak,
+  buildSheet,
+  proficiencyBonus,
+} from "./scoring.js";
+import { QUESTIONS } from "../data/gameData.js";
+
+describe("rawToScore", () => {
+  it("maps the ends of the range to 3 and 18 (19–20 must be earned)", () => {
+    expect(rawToScore(0, 16)).toBe(3);
+    expect(rawToScore(16, 16)).toBe(18);
+  });
+  it("puts all-middle answers at an ordinary 10", () => {
+    expect(rawToScore(8, 16)).toBe(10);
+  });
+  it("needs near-perfect answers for a heroic 17", () => {
+    expect(rawToScore(14, 16)).toBe(16);
+    expect(rawToScore(15, 16)).toBe(17);
+  });
+});
+
+describe("modifier", () => {
+  it("follows the D&D table", () => {
+    expect(modifier(3)).toBe(-4);
+    expect(modifier(9)).toBe(-1);
+    expect(modifier(10)).toBe(0);
+    expect(modifier(11)).toBe(0);
+    expect(modifier(20)).toBe(5);
+  });
+});
+
+describe("computeBaseScores", () => {
+  it("has four questions for each ability", () => {
+    const counts = {};
+    QUESTIONS.forEach((q) => (counts[q.stat] = (counts[q.stat] || 0) + 1));
+    expect(Object.values(counts)).toEqual([4, 4, 4, 4, 4, 4]);
+  });
+  it("scores each ability from only its own questions", () => {
+    const answers = QUESTIONS.map((q) => (q.stat === "STR" ? 4 : 0));
+    const scores = computeBaseScores(answers);
+    expect(scores.STR).toBe(18);
+    expect(scores.DEX).toBe(3);
+    expect(scores.CHA).toBe(3);
+  });
+});
+
+describe("training progress", () => {
+  it("climbs the cost table and caps at 20", () => {
+    expect(currentScore(10, 0)).toBe(10);
+    expect(currentScore(10, 299)).toBe(10);
+    expect(currentScore(10, 600)).toBe(12);
+    expect(currentScore(19, 11999)).toBe(19);
+    expect(currentScore(19, 12000)).toBe(20);
+    expect(currentScore(19, 99999)).toBe(20);
+  });
+  it("reports progress toward the next point", () => {
+    expect(progressToNextPoint(10, 150)).toBeCloseTo(0.5);
+    expect(progressToNextPoint(20, 0)).toBe(1);
+  });
+  it("levels up on a rising curve", () => {
+    expect(characterLevel({ STR: 0 })).toBe(1);
+    expect(characterLevel({ STR: 200, INT: 50 })).toBe(2);
+    expect(characterLevel({ STR: 749 })).toBe(2);
+    expect(characterLevel({ STR: 750 })).toBe(3);
+  });
+});
+
+describe("pickClass", () => {
+  it("uses the top two abilities", () => {
+    expect(pickClass({ STR: 16, DEX: 10, CON: 10, INT: 8, WIS: 10, CHA: 14 })).toBe("Paladin");
+    expect(pickClass({ STR: 8, DEX: 10, CON: 10, INT: 17, WIS: 15, CHA: 9 })).toBe("Wizard");
+  });
+  it("calls an even spread an Adventurer", () => {
+    expect(pickClass({ STR: 11, DEX: 11, CON: 12, INT: 11, WIS: 12, CHA: 11 })).toBe("Adventurer");
+  });
+});
+
+describe("weakestAbilities", () => {
+  it("returns the two lowest, skipping capped scores", () => {
+    const scores = { STR: 20, DEX: 20, CON: 20, INT: 20, WIS: 15, CHA: 9 };
+    expect(weakestAbilities(scores)).toEqual(["CHA", "WIS"]);
+  });
+});
+
+describe("tierIndex", () => {
+  it("bands scores", () => {
+    expect([3, 5, 6, 9, 10, 12, 13, 16, 17, 20].map(tierIndex)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+  });
+});
+
+describe("buildSheet", () => {
+  const save = {
+    base: { STR: 16, DEX: 14, CON: 12, INT: 10, WIS: 8, CHA: 6 },
+    xp: { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 },
+  };
+  it("derives class, background and combat numbers", () => {
+    const sheet = buildSheet(save);
+    expect(sheet.heroClass).toBe("Fighter");
+    expect(sheet.background).toBe("Soldier");
+    expect(sheet.level).toBe(1);
+    expect(sheet.proficiencyBonus).toBe(2);
+    expect(sheet.armorClass).toBe(12);
+    expect(sheet.maxHp).toBe(11); // d10 + CON +1
+  });
+  it("adds proficiency to the top two saves and their skills", () => {
+    const sheet = buildSheet(save);
+    expect(sheet.saves.find((s) => s.stat === "STR")).toMatchObject({ proficient: true, bonus: 5 });
+    expect(sheet.saves.find((s) => s.stat === "CHA")).toMatchObject({ proficient: false, bonus: -2 });
+    expect(sheet.skills.find((s) => s.name === "Athletics")).toMatchObject({ proficient: true, bonus: 5 });
+    expect(sheet.skills.find((s) => s.name === "Stealth")).toMatchObject({ proficient: false, bonus: 2 });
+    expect(sheet.passivePerception).toBe(9);
+  });
+  it("raises proficiency every four levels", () => {
+    expect([1, 4, 5, 9].map(proficiencyBonus)).toEqual([2, 2, 3, 4]);
+  });
+});
+
+describe("dates", () => {
+  it("counts days across month boundaries", () => {
+    expect(daysBetween("2026-01-31", "2026-02-01")).toBe(1);
+  });
+  it("counts a streak that ends today or yesterday", () => {
+    const history = ["2026-11-20", "2026-11-21", "2026-11-22"].map((date) => ({ questId: "x", date }));
+    expect(streak(history, "2026-11-22")).toBe(3);
+    expect(streak(history, "2026-11-23")).toBe(3);
+    expect(streak(history, "2026-11-25")).toBe(0);
+  });
+});
