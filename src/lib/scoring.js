@@ -1,0 +1,154 @@
+import {
+  ABILITY_KEYS,
+  QUESTIONS,
+  CLASS_BY_PAIR,
+  QUESTS,
+  XP_PER_POINT,
+  MIN_SCORE,
+  MAX_SCORE,
+  XP_PER_LEVEL,
+} from "../data/gameData.js";
+
+const MAX_ANSWER = 4;
+
+/** Map a raw questionnaire total (0..maxRaw) onto the 3–20 ability score range. */
+export function rawToScore(raw, maxRaw) {
+  if (maxRaw <= 0) return MIN_SCORE;
+  const clamped = Math.max(0, Math.min(raw, maxRaw));
+  return MIN_SCORE + Math.round((clamped / maxRaw) * (MAX_SCORE - MIN_SCORE));
+}
+
+/** Standard D&D modifier: floor((score - 10) / 2). */
+export function modifier(score) {
+  return Math.floor((score - 10) / 2);
+}
+
+export function formatModifier(mod) {
+  return mod >= 0 ? `+${mod}` : `${mod}`;
+}
+
+/**
+ * answers[i] is the chosen option index (0–4) for QUESTIONS[i].
+ * Returns { STR: n, DEX: n, ... } on the 3–20 scale.
+ */
+export function computeBaseScores(answers, questions = QUESTIONS) {
+  const raw = Object.fromEntries(ABILITY_KEYS.map((k) => [k, 0]));
+  const max = Object.fromEntries(ABILITY_KEYS.map((k) => [k, 0]));
+  questions.forEach((question, i) => {
+    max[question.stat] += MAX_ANSWER;
+    const answer = answers[i];
+    if (typeof answer === "number") raw[question.stat] += answer;
+  });
+  return Object.fromEntries(ABILITY_KEYS.map((k) => [k, rawToScore(raw[k], max[k])]));
+}
+
+/** Score after training: base plus one point per XP_PER_POINT XP, capped at 20. */
+export function currentScore(base, xp = 0) {
+  return Math.min(MAX_SCORE, base + Math.floor(xp / XP_PER_POINT));
+}
+
+/** Progress (0–1) toward the next point in an ability. 1 when capped. */
+export function progressToNextPoint(base, xp = 0) {
+  if (currentScore(base, xp) >= MAX_SCORE) return 1;
+  return (xp % XP_PER_POINT) / XP_PER_POINT;
+}
+
+export function currentScores(base, xp) {
+  return Object.fromEntries(ABILITY_KEYS.map((k) => [k, currentScore(base[k], xp[k] || 0)]));
+}
+
+/** Abilities sorted highest to lowest (ties keep the standard STR→CHA order). */
+export function rankAbilities(scores) {
+  return [...ABILITY_KEYS].sort((a, b) => scores[b] - scores[a] || ABILITY_KEYS.indexOf(a) - ABILITY_KEYS.indexOf(b));
+}
+
+/** Class from the top two abilities, or "Adventurer" when every score is within 1 point. */
+export function pickClass(scores) {
+  const values = ABILITY_KEYS.map((k) => scores[k]);
+  if (Math.max(...values) - Math.min(...values) <= 1) return "Adventurer";
+  const [first, second] = rankAbilities(scores);
+  return CLASS_BY_PAIR[`${first}+${second}`];
+}
+
+/** The two weakest abilities, which training should focus on. Capped scores are skipped. */
+export function weakestAbilities(scores, count = 2) {
+  return rankAbilities(scores)
+    .reverse()
+    .filter((k) => scores[k] < MAX_SCORE)
+    .slice(0, count);
+}
+
+/** Band index 0–4 for TIER_TEXT: 3–5, 6–9, 10–12, 13–16, 17–20. */
+export function tierIndex(score) {
+  if (score <= 5) return 0;
+  if (score <= 9) return 1;
+  if (score <= 12) return 2;
+  if (score <= 16) return 3;
+  return 4;
+}
+
+export function totalXp(xp) {
+  return ABILITY_KEYS.reduce((sum, k) => sum + (xp[k] || 0), 0);
+}
+
+export function characterLevel(xp) {
+  return 1 + Math.floor(totalXp(xp) / XP_PER_LEVEL);
+}
+
+// ── Dates ──────────────────────────────────────────────────────────────
+
+/** Local calendar date as "YYYY-MM-DD". */
+export function dateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Whole days from date key a to date key b. */
+export function daysBetween(a, b) {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  const ms = Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad);
+  return Math.round(ms / 86400000);
+}
+
+/** Days until a quest can be done again (0 = available now). */
+export function cooldownDays(quest, lastDoneKey, todayKey) {
+  if (!lastDoneKey) return 0;
+  const period = quest.freq === "weekly" ? 7 : 1;
+  return Math.max(0, period - daysBetween(lastDoneKey, todayKey));
+}
+
+/** Most recent completion date for each quest, from the history log. */
+export function lastCompletions(history) {
+  const last = {};
+  for (const entry of history) {
+    if (!last[entry.questId] || entry.date > last[entry.questId]) last[entry.questId] = entry.date;
+  }
+  return last;
+}
+
+/** Consecutive days (ending today or yesterday) with at least one quest done. */
+export function streak(history, todayKey) {
+  const days = new Set(history.map((h) => h.date));
+  let count = 0;
+  let cursor = todayKey;
+  if (!days.has(cursor)) {
+    cursor = shiftKey(cursor, -1);
+  }
+  while (days.has(cursor)) {
+    count += 1;
+    cursor = shiftKey(cursor, -1);
+  }
+  return count;
+}
+
+function shiftKey(key, deltaDays) {
+  const [y, m, d] = key.split("-").map(Number);
+  return dateKey(new Date(y, m - 1, d + deltaDays));
+}
+
+export function questById(id) {
+  return QUESTS.find((q) => q.id === id);
+}

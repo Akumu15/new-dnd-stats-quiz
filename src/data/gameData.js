@@ -1,0 +1,157 @@
+// Roll For Real: game data (abilities, questionnaire, classes, training quests).
+// Each question has 5 answers scored 0–4. Four questions per ability give a raw 0–16,
+// which is mapped onto the classic 3–20 ability score range (see lib/scoring.js).
+
+export const ABILITIES = [
+  { key: "STR", name: "Strength", icon: "💪", blurb: "Raw physical power: lifting, pushing, carrying." },
+  { key: "DEX", name: "Dexterity", icon: "🏹", blurb: "Agility, balance, reflexes and skilled hands." },
+  { key: "CON", name: "Constitution", icon: "🛡️", blurb: "Stamina, health, sleep and resilience." },
+  { key: "INT", name: "Intelligence", icon: "📜", blurb: "Learning, reasoning, memory and curiosity." },
+  { key: "WIS", name: "Wisdom", icon: "🦉", blurb: "Awareness, judgment, intuition and calm." },
+  { key: "CHA", name: "Charisma", icon: "🎭", blurb: "Confidence, presence and connecting with people." },
+];
+
+export const ABILITY_KEYS = ABILITIES.map((a) => a.key);
+
+export const QUESTIONS = [
+  // Strength
+  { stat: "STR", q: "How many push-ups can you do in a row? (Knee push-ups count as half.)",
+    a: ["None yet", "1–5", "6–15", "16–30", "More than 30"] },
+  { stat: "STR", q: "How often do you do strength training (weights, bodyweight, climbing, manual labor)?",
+    a: ["Never", "A few times a year", "A few times a month", "Once or twice a week", "Three or more times a week"] },
+  { stat: "STR", q: "Carrying a heavy suitcase up three flights of stairs would be…",
+    a: ["Not happening", "Very hard, with many breaks", "Doable with a break", "Fine", "Easy. I'd take yours too"] },
+  { stat: "STR", q: "When something heavy needs moving (furniture, groceries), you…",
+    a: ["Ask someone else", "Help a little", "Do my share", "Usually take the heavy end", "Get called first"] },
+
+  // Dexterity
+  { stat: "DEX", q: "Standing on one leg with your eyes closed, how long can you balance?",
+    a: ["A second or two", "About 5 seconds", "About 15 seconds", "About 30 seconds", "As long as I want"] },
+  { stat: "DEX", q: "Sitting with your legs straight, can you touch your toes?",
+    a: ["Not even close", "I reach my shins", "My fingertips just touch", "Palms on my toes", "Palms flat past my feet"] },
+  { stat: "DEX", q: "Someone tosses you keys without warning. You…",
+    a: ["Get hit", "Drop them", "Fumble, then catch them", "Usually catch them", "Snatch them out of the air"] },
+  { stat: "DEX", q: "How good are your hand skills (instruments, drawing, crafts, sports, gaming)?",
+    a: ["Clumsy with my hands", "Basic", "Decent at one thing", "Good at a few", "Highly skilled"] },
+
+  // Constitution
+  { stat: "CON", q: "On a typical night, how well do you sleep?",
+    a: ["Badly, under 5 hours", "Restless, 5–6 hours", "Okay, about 6–7 hours", "Good, 7–8 hours", "Great, 7–9 solid hours"] },
+  { stat: "CON", q: "Could you walk or jog for 30 minutes without stopping?",
+    a: ["No", "I could walk it, but I'd be wiped out", "Walk it comfortably", "Jog it with effort", "Run it easily"] },
+  { stat: "CON", q: "How often do you get sick (colds, flu)?",
+    a: ["All the time", "Several times a year", "A couple of times a year", "Once a year", "Almost never"] },
+  { stat: "CON", q: "How healthy are your eating and drinking habits (water, vegetables, less junk food)?",
+    a: ["Pretty rough", "Mostly junk", "Mixed", "Mostly healthy", "Consistently healthy"] },
+
+  // Intelligence
+  { stat: "INT", q: "How many books (or long courses or podcast series) do you finish a year?",
+    a: ["None", "1–2", "3–6", "7–15", "More than 15"] },
+  { stat: "INT", q: "When you hit something you don't understand, you…",
+    a: ["Ignore it", "Wonder about it, then move on", "Sometimes look it up", "Usually look it up", "Go down the rabbit hole"] },
+  { stat: "INT", q: "Puzzles, strategy games, math or coding problems are…",
+    a: ["Painful", "Not for me", "Okay sometimes", "Fun", "My favorite thing"] },
+  { stat: "INT", q: "When did you last learn a genuinely new skill?",
+    a: ["I can't remember", "Years ago", "In the last year", "In the last few months", "I'm learning one right now"] },
+
+  // Wisdom
+  { stat: "WIS", q: "How often do you notice how a friend feels before they say anything?",
+    a: ["Almost never", "Rarely", "Sometimes", "Often", "Almost always"] },
+  { stat: "WIS", q: "When you're angry or stressed, you…",
+    a: ["React instantly and regret it later", "Often snap", "Sometimes pause", "Usually pause before acting", "Stay calm and choose my response"] },
+  { stat: "WIS", q: "How often do you reflect (journal, meditate, think over your day)?",
+    a: ["Never", "Rarely", "Monthly", "Weekly", "Daily"] },
+  { stat: "WIS", q: "How often do people come to you for advice?",
+    a: ["Never", "Rarely", "Sometimes", "Often", "I'm the friend everyone calls"] },
+
+  // Charisma
+  { stat: "CHA", q: "Starting a conversation with a stranger feels…",
+    a: ["Terrifying", "Very uncomfortable", "A bit awkward", "Fine", "Natural and fun"] },
+  { stat: "CHA", q: "Speaking in front of a group of 20 people would be…",
+    a: ["My nightmare", "Very stressful", "Nerve-wracking but okay", "Comfortable", "Exciting. Give me the mic"] },
+  { stat: "CHA", q: "How often do people invite you places or reach out first?",
+    a: ["Almost never", "Rarely", "Sometimes", "Often", "Constantly"] },
+  { stat: "CHA", q: "When you want to convince someone of something, you…",
+    a: ["Don't even try", "Usually give up", "Win sometimes", "Usually persuade them", "Can rally a whole room"] },
+];
+
+// Class is chosen from the two highest abilities. Key = "PRIMARY+SECONDARY".
+export const CLASS_BY_PAIR = {
+  "STR+DEX": "Fighter", "STR+CON": "Barbarian", "STR+INT": "Eldritch Knight", "STR+WIS": "Ranger", "STR+CHA": "Paladin",
+  "DEX+STR": "Swashbuckler", "DEX+CON": "Monk", "DEX+INT": "Rogue", "DEX+WIS": "Ranger", "DEX+CHA": "Bard",
+  "CON+STR": "Barbarian", "CON+DEX": "Monk", "CON+INT": "Artificer", "CON+WIS": "Druid", "CON+CHA": "Sorcerer",
+  "INT+STR": "Eldritch Knight", "INT+DEX": "Artificer", "INT+CON": "Wizard", "INT+WIS": "Wizard", "INT+CHA": "Warlock",
+  "WIS+STR": "Cleric", "WIS+DEX": "Monk", "WIS+CON": "Druid", "WIS+INT": "Sage", "WIS+CHA": "Cleric",
+  "CHA+STR": "Paladin", "CHA+DEX": "Bard", "CHA+CON": "Sorcerer", "CHA+INT": "Warlock", "CHA+WIS": "Bard",
+};
+
+export const CLASS_FLAVOR = {
+  Fighter: "Disciplined and battle-ready. You meet challenges head-on.",
+  Barbarian: "Tough as old leather. You push through what stops others.",
+  "Eldritch Knight": "Brains and brawn: a rare blend of power and study.",
+  Ranger: "Grounded, perceptive and at home in the wild.",
+  Paladin: "Strong and inspiring. People follow your lead.",
+  Swashbuckler: "Quick, bold and stylish. You move before others think.",
+  Monk: "Balanced body and focused mind. Control is your weapon.",
+  Rogue: "Clever and nimble. You find the angle nobody saw.",
+  Bard: "Charming and quick-witted. Every room is your stage.",
+  Artificer: "A tinkerer and maker. You build your way out of problems.",
+  Druid: "Patient, resilient and in tune with the world around you.",
+  Sorcerer: "Natural magnetism and staying power. Your presence is felt.",
+  Wizard: "A scholar of the arcane. Knowledge is your power.",
+  Warlock: "Sharp mind, silver tongue. Your deals tend to work in your favor.",
+  Cleric: "Wise and steady. Others lean on your guidance.",
+  Sage: "Thoughtful and learned. You see the bigger picture.",
+  Adventurer: "Perfectly balanced. Every path is still open to you.",
+};
+
+// What each score band means, per ability (bands: 3–5, 6–9, 10–12, 13–16, 17–20).
+export const TIER_TEXT = {
+  STR: ["Feeble: everyday lifting is a struggle.", "Below average: there's room to build a base.", "Average adventurer strength.", "Strong: you could carry the party's gear.", "Mighty: a legend of strength."],
+  DEX: ["Clumsy: balance and coordination need work.", "A little stiff and slow to react.", "Average agility.", "Nimble: quick hands and quick feet.", "Acrobatic: graceful and lightning-fast."],
+  CON: ["Fragile: low energy and easily worn down.", "You get tired or sick more than you'd like.", "Average stamina.", "Hardy: you keep going and bounce back.", "Iron constitution."],
+  INT: ["Learning has taken a back seat lately.", "Curious, but you rarely dig in.", "Average intellect.", "Sharp: you learn fast and love ideas.", "Brilliant: a true scholar."],
+  WIS: ["Impulsive: you act first and think later.", "Often caught off guard by feelings.", "Average insight.", "Perceptive and level-headed.", "Sage-like calm and insight."],
+  CHA: ["Very shy: people feel hard to reach.", "Reserved: you hold back socially.", "Average presence.", "Engaging: people enjoy your company.", "Magnetic: a natural leader."],
+};
+
+// Training quests. xp = XP earned toward that ability each time one is completed.
+// "daily" quests can be completed once per calendar day; "weekly" ones once per 7 days.
+export const QUESTS = [
+  // STR
+  { id: "str-pushups", stat: "STR", freq: "daily", xp: 10, title: "Push-up set", desc: "Do as many push-ups as you can, then 3 more sets." },
+  { id: "str-squats", stat: "STR", freq: "daily", xp: 10, title: "Squat challenge", desc: "Do 3 sets of 15 bodyweight squats." },
+  { id: "str-plank", stat: "STR", freq: "daily", xp: 10, title: "Hold the line", desc: "Hold a plank 3 times for as long as you can." },
+  { id: "str-workout", stat: "STR", freq: "weekly", xp: 40, title: "Full strength session", desc: "Do a strength workout of 30 minutes or more, at the gym or at home." },
+  // DEX
+  { id: "dex-stretch", stat: "DEX", freq: "daily", xp: 10, title: "Limber up", desc: "Stretch for 10 minutes: hamstrings, hips, shoulders." },
+  { id: "dex-balance", stat: "DEX", freq: "daily", xp: 10, title: "Stork stance", desc: "Balance on each leg for 1 minute, then try it with your eyes closed." },
+  { id: "dex-skill", stat: "DEX", freq: "daily", xp: 15, title: "Practice your craft", desc: "Spend 20 minutes on a hand skill: an instrument, drawing, juggling or a sport." },
+  { id: "dex-sport", stat: "DEX", freq: "weekly", xp: 40, title: "Agility trial", desc: "Play a sport, dance, climb or do yoga for 45 minutes or more." },
+  // CON
+  { id: "con-sleep", stat: "CON", freq: "daily", xp: 15, title: "Long rest", desc: "Get 7 or more hours of sleep. Screens off 30 minutes before bed." },
+  { id: "con-water", stat: "CON", freq: "daily", xp: 10, title: "Potion of hydration", desc: "Drink 8 glasses of water today." },
+  { id: "con-walk", stat: "CON", freq: "daily", xp: 10, title: "Overland travel", desc: "Walk or jog for 30 minutes." },
+  { id: "con-veg", stat: "CON", freq: "daily", xp: 10, title: "Rations of the realm", desc: "Eat vegetables or fruit with at least two meals." },
+  { id: "con-cardio", stat: "CON", freq: "weekly", xp: 40, title: "Endurance run", desc: "Do 45 minutes or more of continuous cardio." },
+  // INT
+  { id: "int-read", stat: "INT", freq: "daily", xp: 15, title: "Study the tomes", desc: "Read a book (not social media) for 20 minutes." },
+  { id: "int-puzzle", stat: "INT", freq: "daily", xp: 10, title: "Riddle of the day", desc: "Solve a puzzle: sudoku, chess tactics, a crossword or a logic problem." },
+  { id: "int-learn", stat: "INT", freq: "daily", xp: 15, title: "Arcane research", desc: "Spend 20 minutes learning a new skill or language." },
+  { id: "int-deep", stat: "INT", freq: "weekly", xp: 40, title: "Master a topic", desc: "Finish a course module, documentary or long article, then summarize it in your own words." },
+  // WIS
+  { id: "wis-meditate", stat: "WIS", freq: "daily", xp: 10, title: "Meditation", desc: "Sit quietly and focus on your breath for 10 minutes." },
+  { id: "wis-journal", stat: "WIS", freq: "daily", xp: 15, title: "Scribe's journal", desc: "Write about your day: what went well and what you'd change." },
+  { id: "wis-nature", stat: "WIS", freq: "daily", xp: 10, title: "Commune with nature", desc: "Spend 15 minutes outside without your phone." },
+  { id: "wis-review", stat: "WIS", freq: "weekly", xp: 40, title: "Council of one", desc: "Review your week: wins, lessons, and one goal for next week." },
+  // CHA
+  { id: "cha-compliment", stat: "CHA", freq: "daily", xp: 10, title: "Kind words", desc: "Give someone a sincere, specific compliment." },
+  { id: "cha-stranger", stat: "CHA", freq: "daily", xp: 15, title: "Talk to a stranger", desc: "Start a short conversation with someone new." },
+  { id: "cha-reach", stat: "CHA", freq: "daily", xp: 10, title: "Send a raven", desc: "Message or call a friend you haven't talked to in a while." },
+  { id: "cha-plan", stat: "CHA", freq: "weekly", xp: 40, title: "Rally the party", desc: "Organize a hangout, game night or group activity." },
+];
+
+export const XP_PER_POINT = 100; // XP needed in an ability to raise it by 1
+export const MIN_SCORE = 3;
+export const MAX_SCORE = 20;
+export const XP_PER_LEVEL = 300; // total XP across all abilities per character level
