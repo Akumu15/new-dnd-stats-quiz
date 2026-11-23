@@ -1,7 +1,7 @@
 import { ABILITIES, MAX_SCORE } from "../data/gameData.js";
 import { DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS, TIER_NAMES, MAX_FOCUS_XP_PER_WEEK } from "../data/quests.js";
 import { boardFor, currentScores, dateKey, heroFocus, questById, streak } from "../lib/scoring.js";
-import { daysLeftInWeek, periodProgress, questStatus, scoreProgress, weeksAtFullEffort } from "../lib/progression.js";
+import { daysLeftInWeek, formatWeeks, periodProgress, questStatus, scoreProgress, weeksAtFullEffort } from "../lib/progression.js";
 
 const abilityByKey = Object.fromEntries(ABILITIES.map((a) => [a.key, a]));
 
@@ -93,7 +93,8 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
       <article className="parchment road">
         <h2 className="section-title">The Long Road</h2>
         <p className="panel-note">
-          Each point is harder won than the last. At full focus, an ability earns about {MAX_FOCUS_XP_PER_WEEK} XP a week.
+          Each point is harder won than the last. A score of 17 or more is the stuff of legend and takes years
+          to reach. Estimates assume full focus, which earns an ability about {MAX_FOCUS_XP_PER_WEEK} XP a week.
         </p>
         <ul className="road-list">
           {ABILITIES.map((a) => {
@@ -107,7 +108,7 @@ export default function Training({ save, onComplete, onUndo, onFocus }) {
                   <div className="road-fill" style={{ width: `${p.progress * 100}%` }} />
                 </div>
                 <span className="road-eta">
-                  {p.capped ? "Mastered" : `${p.into}/${p.needed} XP · ~${weeks} ${weeks === 1 ? "week" : "weeks"} to ${p.score + 1}`}
+                  {p.capped ? "Mastered" : `${p.into}/${p.needed} XP · ~${formatWeeks(weeks)} to ${p.score + 1}`}
                 </span>
               </li>
             );

@@ -9,9 +9,13 @@
 //     that many can be completed. There's nothing to grind.
 //   • Daily quest = 10 XP, weekly bounty = 35 XP.
 //   • A focused ability gets 1 daily slot every day plus 1 bounty a week, so about 105 XP a week at most.
-//   • Raising a score costs more the higher it is (XP_TO_NEXT below). At full effort:
-//       8 → 9   ≈ 2 weeks      12 → 13 ≈ 4 weeks     12 → 15 ≈ 3 months
-//       16 → 17 ≈ 9 weeks      18 → 20 ≈ 6 months
+//   • Raising a score costs more the higher it is (XP_TO_NEXT below). In tabletop terms
+//     10–11 is an ordinary person, 15–16 is exceptional, and 17+ is heroic, close to the limit
+//     of what a mortal can reach. At PERFECT effort (every quest, every day):
+//       8 → 9   ≈ 2 weeks       12 → 13 ≈ 1 month        12 → 15 ≈ 4 months
+//       15 → 16 ≈ 3 months      16 → 17 ≈ 6 months       17 → 18 ≈ 11 months
+//       18 → 19 ≈ 1.5 years     19 → 20 ≈ 2+ years
+//     Real people manage about 60%, so in practice expect roughly 1.6× longer.
 
 export const DAILY_XP = 10;
 export const WEEKLY_XP = 35;
@@ -25,10 +29,13 @@ export const XP_TO_NEXT = {
   6: 150, 7: 150,
   8: 200, 9: 200,
   10: 300, 11: 300,
-  12: 400, 13: 400,
-  14: 600, 15: 600,
-  16: 900, 17: 900,
-  18: 1300, 19: 1300,
+  12: 450, 13: 450,
+  14: 800,
+  15: 1200,
+  16: 2500,   // exceptional → heroic
+  17: 5000,   // heroic → near-legendary
+  18: 8000,
+  19: 12000,  // the last step to legend
 };
 
 /** Best-case XP a single focused ability can earn in a week (1 daily/day + 1 bounty). */

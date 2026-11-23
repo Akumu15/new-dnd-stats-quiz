@@ -43,6 +43,15 @@ export function weeksAtFullEffort(xp) {
   return Math.max(1, Math.ceil(xp / MAX_FOCUS_XP_PER_WEEK));
 }
 
+/** Human-friendly duration: "3 weeks", "5 months", "1.5 years". */
+export function formatWeeks(weeks) {
+  if (weeks < 9) return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
+  const months = Math.round(weeks / 4.345);
+  if (months < 12) return `${months} months`;
+  const years = Math.round((weeks / 52.18) * 2) / 2;
+  return `${years} ${years === 1 ? "year" : "years"}`;
+}
+
 // ── Character level ─────────────────────────────────────────────────
 // Level n needs 125·n·(n−1) total XP: L2 250 · L3 750 · L4 1500 · L5 2500 · L10 11250
 
@@ -129,9 +138,9 @@ function offer(quest, scores) {
 
 /**
  * Build the quests on offer today.
- *  • Daily (3): one per focus ability (two if only one focus), plus one "wildcard"
- *    from another ability, favoring lower scores so no ability is forgotten.
- *  • Weekly (2): one bounty per focus ability (two if only one focus).
+ *  • Daily (3): one per focus ability, the rest "wildcards" from other abilities,
+ *    favoring lower scores so no ability is forgotten.
+ *  • Weekly (2): one bounty per focus ability, the rest wildcards.
  * The same seed, day and focus always produce the same board.
  */
 export function generateBoard({ focus, scores, seed, today }) {
@@ -139,9 +148,21 @@ export function generateBoard({ focus, scores, seed, today }) {
   const dayRng = mulberry32(hashString(`${seed}|day|${today}`));
   const weekRng = mulberry32(hashString(`${seed}|week|${week}`));
 
-  const dailySlots = focus.length >= 2 ? [focus[0], focus[1]] : [focus[0], focus[0]];
+  // Each focus ability gets exactly one daily slot and one bounty, so focusing on a single
+  // ability never doubles its XP. Leftover slots become wildcards from other abilities.
   const others = ABILITY_KEYS.filter((k) => !focus.includes(k));
-  dailySlots.push(pickWeighted(dayRng, others, (k) => MAX_SCORE + 1 - scores[k]));
+  const wildcards = (rng, count) => {
+    const pool = [...others];
+    const picked = [];
+    while (picked.length < count && pool.length) {
+      const k = pickWeighted(rng, pool, (s) => MAX_SCORE + 1 - scores[s]);
+      picked.push(k);
+      pool.splice(pool.indexOf(k), 1);
+    }
+    return picked;
+  };
+  const dailySlots = [...focus.slice(0, DAILY_SLOTS - 1)];
+  dailySlots.push(...wildcards(dayRng, DAILY_SLOTS - dailySlots.length));
 
   const usedDaily = new Set();
   const daily = dailySlots.slice(0, DAILY_SLOTS).map((stat) => {
@@ -151,7 +172,8 @@ export function generateBoard({ focus, scores, seed, today }) {
     return offer(quest, scores);
   });
 
-  const weeklySlots = focus.length >= 2 ? [focus[0], focus[1]] : [focus[0], focus[0]];
+  const weeklySlots = [...focus.slice(0, WEEKLY_SLOTS)];
+  weeklySlots.push(...wildcards(weekRng, WEEKLY_SLOTS - weeklySlots.length));
   const usedWeekly = new Set();
   const weekly = weeklySlots.slice(0, WEEKLY_SLOTS).map((stat) => {
     const options = QUESTS.filter((q) => q.stat === stat && q.freq === "weekly" && !usedWeekly.has(q.id));

@@ -11,16 +11,17 @@ Find out what your D&D ability scores would be in real life, then train to level
 Growth is meant to feel like real life: steady, and slower the better you get.
 
 - **Focus:** pick up to 2 abilities to train (the default is your two weakest).
-- **Each day:** 3 quests, one per focus ability plus a *wildcard* from another ability (lower scores come up more often). Only 3 dailies can be claimed per day, so changing your focus doesn't unlock more.
-- **Each week (Mon–Sun):** 2 bounties, one per focus ability. Daily quests are worth 10 XP and bounties 35 XP.
+- **Each day:** 3 quests. Each focus ability gets exactly one, and the rest are *wildcards* from other abilities (lower scores come up more often). Only 3 dailies can be claimed per day, so changing your focus doesn't unlock more, and focusing on a single ability doesn't double its XP.
+- **Each week (Mon–Sun):** 2 bounties, one per focus ability (wildcards fill any gap). Daily quests are worth 10 XP and bounties 35 XP.
 - **Quests scale with you:** every quest has Novice (score 3–9), Adept (10–14) and Expert (15–20) versions. For example, 5 push-ups, then 12, then 20.
 - **Points cost more as you climb** (`XP_TO_NEXT` in `src/data/quests.js`):
 
-  | Score | 3–5 | 6–7 | 8–9 | 10–11 | 12–13 | 14–15 | 16–17 | 18–19 |
-  |---|---|---|---|---|---|---|---|---|
-  | XP per point | 120 | 150 | 200 | 300 | 400 | 600 | 900 | 1300 |
+  | Score | 3–5 | 6–7 | 8–9 | 10–11 | 12–13 | 14 | 15 | 16 | 17 | 18 | 19 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | XP for +1 | 120 | 150 | 200 | 300 | 450 | 800 | 1200 | 2500 | 5000 | 8000 | 12000 |
+  | Perfect effort | ~1 wk | ~1.5 wk | ~2 wk | ~3 wk | ~1 mo | ~2 mo | ~3 mo | ~6 mo | ~11 mo | ~1.5 yr | ~2+ yr |
 
-  A focused ability earns at most about 105 XP a week, so at perfect effort 12→13 takes about 4 weeks, 12→15 about 3 months, and 18→20 about 6 months.
+  In tabletop terms, 10–11 is an ordinary person, 15–16 is exceptional, and 17+ is heroic. A focused ability earns at most 105 XP a week, and real people manage about 60% of that, so expect real progress to take around 1.6× longer than the table shows.
 - **Character level** follows a rising curve: level *n* needs 125·n·(n−1) total XP (L2 250, L3 750, L5 2500).
 
 The tests in `src/lib/progression.test.js` simulate a perfect player to keep this pace from drifting.

@@ -9,6 +9,7 @@ import {
   questStatus,
   canClaim,
   normalizeFocus,
+  formatWeeks,
 } from "./progression.js";
 import { QUESTS, DAILY_SLOTS, WEEKLY_SLOTS, MAX_FOCUS_XP_PER_WEEK } from "../data/quests.js";
 import { ABILITY_KEYS } from "../data/gameData.js";
@@ -30,11 +31,23 @@ describe("quest pool", () => {
 describe("cost table", () => {
   it("makes higher scores cost more", () => {
     expect(xpBetween(8, 9)).toBe(200);
-    expect(xpBetween(12, 15)).toBe(1400);
-    expect(xpBetween(18, 20)).toBe(2600);
+    expect(xpBetween(12, 15)).toBe(1700);
+    expect(xpBetween(17, 18)).toBe(5000);
+    expect(xpBetween(18, 20)).toBe(20000);
+  });
+  it("makes every step above 15 at least twice as costly as the last", () => {
+    for (const s of [15, 16, 17]) expect(xpBetween(s + 1, s + 2)).toBeGreaterThanOrEqual(1.5 * xpBetween(s, s + 1));
+    expect(xpBetween(16, 17)).toBeGreaterThanOrEqual(2 * xpBetween(15, 16));
   });
   it("tracks XP banked toward the next point", () => {
-    expect(scoreProgress(12, 450)).toMatchObject({ score: 13, into: 50, needed: 400 });
+    expect(scoreProgress(12, 500)).toMatchObject({ score: 13, into: 50, needed: 450 });
+  });
+  it("formats long estimates in months and years", () => {
+    expect(formatWeeks(1)).toBe("1 week");
+    expect(formatWeeks(8)).toBe("8 weeks");
+    expect(formatWeeks(13)).toBe("3 months");
+    expect(formatWeeks(48)).toBe("11 months");
+    expect(formatWeeks(77)).toBe("1.5 years");
   });
 });
 
@@ -73,12 +86,13 @@ describe("generateBoard", () => {
     expect(high.tier).toBe(2);
     expect(low.task).not.toBe(high.task);
   });
-  it("gives two different quests when only one ability is in focus", () => {
+  it("never doubles up when only one ability is in focus", () => {
     const board = generateBoard({ ...args, focus: ["CHA"] });
-    expect(board.daily[0].quest.stat).toBe("CHA");
-    expect(board.daily[1].quest.stat).toBe("CHA");
-    expect(board.daily[0].quest.id).not.toBe(board.daily[1].quest.id);
-    expect(board.weekly[0].quest.id).not.toBe(board.weekly[1].quest.id);
+    expect(board.daily.filter((o) => o.quest.stat === "CHA")).toHaveLength(1);
+    expect(board.weekly.filter((o) => o.quest.stat === "CHA")).toHaveLength(1);
+    expect(board.daily).toHaveLength(DAILY_SLOTS);
+    expect(board.weekly).toHaveLength(WEEKLY_SLOTS);
+    expect(new Set(board.daily.map((o) => o.quest.stat)).size).toBe(3);
   });
   it("normalizes focus", () => {
     expect(normalizeFocus(["STR", "STR", "XYZ", "INT", "WIS"], ["CHA"])).toEqual(["STR", "INT"]);
@@ -125,15 +139,23 @@ describe("balance", () => {
     expect(save.xp.STR).toBeLessThanOrEqual(MAX_FOCUS_XP_PER_WEEK);
     expect(save.history.filter((h) => h.freq === "daily")).toHaveLength(7 * DAILY_SLOTS);
   });
+  it("gives no extra XP for focusing on a single ability", () => {
+    const { save } = simulate({ base: baseScores, focus: ["STR"], days: 7 * 8 });
+    expect(save.xp.STR).toBe(8 * MAX_FOCUS_XP_PER_WEEK);
+  });
   it("can't take Strength from 12 to 15 in a week, or even a month", () => {
     expect(simulate({ base: baseScores, focus: ["STR", "INT"], days: 7 }).scores.STR).toBe(12);
     expect(simulate({ base: baseScores, focus: ["STR", "INT"], days: 28 }).scores.STR).toBeLessThanOrEqual(13);
   });
-  it("gets there in about 3 months of perfect, focused training", () => {
-    const after12Weeks = simulate({ base: baseScores, focus: ["STR", "INT"], days: 84 }).scores.STR;
-    const after14Weeks = simulate({ base: baseScores, focus: ["STR", "INT"], days: 98 }).scores.STR;
-    expect(after12Weeks).toBe(14);
-    expect(after14Weeks).toBe(15);
+  it("gets from 12 to 15 in about 4 months of perfect, focused training", () => {
+    expect(simulate({ base: baseScores, focus: ["STR", "INT"], days: 16 * 7 }).scores.STR).toBe(14);
+    expect(simulate({ base: baseScores, focus: ["STR", "INT"], days: 17 * 7 }).scores.STR).toBe(15);
+  });
+  it("takes about a year of perfect training to go from 17 to 18", () => {
+    const base = { ...baseScores, STR: 17 };
+    expect(simulate({ base, focus: ["STR", "INT"], days: 26 * 7 }).scores.STR).toBe(17); // 6 months: not yet
+    expect(simulate({ base, focus: ["STR", "INT"], days: 44 * 7 }).scores.STR).toBe(17); // 10 months: not yet
+    expect(simulate({ base, focus: ["STR", "INT"], days: 52 * 7 }).scores.STR).toBe(18); // a year: there
   });
   it("lets beginners grow faster than veterans", () => {
     const low = simulate({ base: { ...baseScores, STR: 6 }, focus: ["STR", "INT"], days: 56 });

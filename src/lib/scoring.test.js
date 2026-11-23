@@ -56,7 +56,9 @@ describe("training progress", () => {
     expect(currentScore(10, 0)).toBe(10);
     expect(currentScore(10, 299)).toBe(10);
     expect(currentScore(10, 600)).toBe(12);
-    expect(currentScore(19, 5000)).toBe(20);
+    expect(currentScore(19, 11999)).toBe(19);
+    expect(currentScore(19, 12000)).toBe(20);
+    expect(currentScore(19, 99999)).toBe(20);
   });
   it("reports progress toward the next point", () => {
     expect(progressToNextPoint(10, 150)).toBeCloseTo(0.5);
