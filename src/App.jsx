@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
-import { ABILITY_KEYS } from "./data/gameData.js";
-import { boardFor, computeBaseScores, dateKey, questById } from "./lib/scoring.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ABILITY_KEYS, ABILITIES } from "./data/gameData.js";
+import { boardFor, buildSheet, computeBaseScores, dateKey, questById } from "./lib/scoring.js";
+import { useCardPublisher, useCloud } from "./lib/useCloud.js";
+import { postFeed } from "./lib/cloud.js";
+import { isValidCode, normalizeCode } from "./lib/party.js";
+import Party from "./components/Party.jsx";
 import { canClaim } from "./lib/progression.js";
 import { recalibrate, trialAvailability } from "./lib/trials.js";
 import { decodeShare } from "./lib/share.js";
@@ -16,10 +20,41 @@ import SharedSheet from "./components/SharedSheet.jsx";
 const emptyXp = () => Object.fromEntries(ABILITY_KEYS.map((k) => [k, 0]));
 
 export default function App() {
-  const [save, setSave] = useState(() => loadSave());
+  const [save, replaceSave] = useState(() => loadSave());
   const [shared, setShared] = useState(() => decodeShare(window.location.hash));
-  const [view, setView] = useState(() => (decodeShare(window.location.hash) ? "shared" : loadSave() ? "sheet" : "landing"));
+  // ?join=CODE invite links open the Party tab with the code filled in.
+  const [inviteCode] = useState(() => {
+    const c = normalizeCode(new URLSearchParams(window.location.search).get("join"));
+    return isValidCode(c) ? c : "";
+  });
+  const [view, setView] = useState(() =>
+    decodeShare(window.location.hash) ? "shared" : loadSave() ? (inviteCode ? "party" : "sheet") : "landing"
+  );
   const [pendingName, setPendingName] = useState("");
+
+  // Every change made on this device is stamped, so cloud sync knows which copy is newer.
+  const setSave = useCallback(
+    (updater) =>
+      replaceSave((s) => {
+        const next = typeof updater === "function" ? updater(s) : updater;
+        return !next || next === s ? next : { ...next, updatedAt: Date.now() };
+      }),
+    []
+  );
+
+  const cloud = useCloud(save, replaceSave);
+  const [memberCount, setMemberCount] = useState(1);
+  useCardPublisher(cloud.user, cloud.ready, save, memberCount);
+
+  // Tell the party when you level up.
+  const level = save ? buildSheet(save).level : 0;
+  const lastLevel = useRef(level);
+  useEffect(() => {
+    if (level > lastLevel.current && lastLevel.current > 0 && cloud.user && save?.partyId) {
+      postFeed(save.partyId, { type: "level", fromUid: cloud.user.uid, fromName: save.name || "Nameless Hero", detail: String(level) }).catch(() => {});
+    }
+    lastLevel.current = level;
+  }, [level, cloud.user, save?.partyId, save?.name]);
 
   const leaveShared = () => {
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -48,9 +83,11 @@ export default function App() {
       history: [],
       trials: [],
       focus: null,
+      partyId: save?.partyId || null, // a new character stays in the same party
       createdAt: new Date().toISOString(),
     });
-    setView("sheet");
+    // Arrived through an invite link? Go straight to the party after the quiz.
+    setView(inviteCode && !save?.partyId ? "party" : "sheet");
   };
 
   // Claim a quest from today's board. The board and its daily/weekly caps are re-checked here,
@@ -110,6 +147,15 @@ export default function App() {
         trials: [...(s.trials || []), { stat, date: today, raw, measured, applied: apply }],
       };
     });
+    if (cloud.user && save?.partyId) {
+      const ability = ABILITIES.find((a) => a.key === stat)?.name || stat;
+      postFeed(save.partyId, {
+        type: "trial",
+        fromUid: cloud.user.uid,
+        fromName: save.name || "Nameless Hero",
+        detail: `${ability} measured ${measured}`,
+      }).catch(() => {});
+    }
   };
 
   const rename = (name) => setSave((s) => ({ ...s, name }));
@@ -132,8 +178,12 @@ export default function App() {
             <button className={view === "trials" ? "tab active" : "tab"} onClick={() => setView("trials")}>
               Trials
             </button>
+            <button className={view === "party" ? "tab active" : "tab"} onClick={() => setView("party")}>
+              Party
+            </button>
           </nav>
         )}
+        {cloud.user && <SyncBadge status={cloud.status} />}
       </header>
 
       <main className="content">
@@ -149,13 +199,21 @@ export default function App() {
           <CharacterSheet save={save} onTrain={() => setView("train")} onTrials={() => setView("trials")} onRetake={retake} onRename={rename} />
         )}
         {view === "trials" && save && <Trials save={save} onRecord={recordTrial} />}
+        {view === "party" && save && (
+          <Party save={save} cloud={cloud} updateSave={setSave} inviteCode={inviteCode} onMembers={setMemberCount} />
+        )}
         {view === "train" && save && (
           <Training save={save} onComplete={completeQuest} onUndo={undoQuest} onFocus={setFocus} />
         )}
       </main>
 
       <footer className="footer">
-        <p>Your character is kept in this browser only. Made for fun, not a medical or psychological assessment.</p>
+        <p>
+          {cloud.user && !cloud.user.isAnonymous
+            ? "Your character is saved to your account."
+            : "Your character is kept in this browser. Sign in on the Party tab to keep it safe."}{" "}
+          Made for fun, not a medical or psychological assessment.
+        </p>
         <p>
           An unofficial fan project, not affiliated with or endorsed by Wizards of the Coast. Includes material from the
           System Reference Document 5.1 by Wizards of the Coast LLC, licensed under{" "}
@@ -164,6 +222,12 @@ export default function App() {
       </footer>
     </div>
   );
+}
+
+function SyncBadge({ status }) {
+  const label = { syncing: "Saving…", saved: "Saved", error: "Offline", idle: "" }[status];
+  if (!label) return null;
+  return <span className={`sync-badge ${status}`} title="Cloud save">☁ {label}</span>;
 }
 
 // Original twenty-sided die mark (simple geometric outline).

@@ -9,6 +9,21 @@ Find out what your D&D ability scores would be in real life, then train to level
 4. **Trials**: one real measurement per ability, which can prove or correct your sheet. See *Trials* below.
 5. **Sharing**: a parchment PNG card (the share sheet on phones, a download elsewhere) and a link that opens a read-only view of your hero.
 
+6. **Party** (sign in with Google, or as a guest): parties of up to 6 with invite codes and links, a shared weekly boss that every claimed quest damages (double damage on its weak ability), loot for everyone when it falls, rallies to nudge friends, and a party chronicle. There's no punishment if the boss escapes. Signing in also syncs your hero to the cloud.
+
+## Firebase
+
+Project `roll-for-real-app` (Firestore in `nam5`). The web config in `src/lib/firebase.js` is public by design; access is enforced by `firestore.rules`.
+
+| Collection | Contents | Who can read / write |
+|---|---|---|
+| `heroes/{uid}` | full private save | owner only |
+| `cards/{uid}` | name, level, class, scores, streak, weekly damage | owner writes; party mates read |
+| `parties/{code}` | name, founder, member uids (max 6) | get by code when signed in (no listing); join, leave and rename are validated |
+| `parties/{code}/feed` | chronicle entries (fixed types, no free text) | members only; append-only |
+
+Deploy rules with `npx firebase-tools deploy --only firestore:rules`. Sign-in providers (Google and Anonymous) and authorized domains are set in the Firebase console under Authentication.
+
 ## Quiz scale
 
 The quiz maps to **3–18**, the classic human range. All-middle answers give an ordinary **10**, and only near-perfect answers reach 16–18. The legendary **19–20** can never come from the quiz; it must be earned through training.

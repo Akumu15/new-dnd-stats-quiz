@@ -413,6 +413,53 @@ p { margin: 0 0 0.6em; }
 .shared-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 14px; max-width: 520px; margin: 0 auto 26px; }
 .shared .ability-xp { visibility: hidden; }
 
+/* ── Party ────────────────────────────────────────────────── */
+.sync-badge { font-family: var(--display); font-size: 0.7rem; letter-spacing: 0.08em; color: #cbb68f; border: 1px solid #5a3f22; border-radius: 999px; padding: 3px 10px; }
+.sync-badge.saved { color: #9fd39f; }
+.sync-badge.error { color: #f0a29a; }
+.party-panel { max-width: 640px; margin: 12px auto 0; text-align: center; padding: 34px; }
+.party-find .party-panel + .party-panel { margin-top: 0; }
+.divider.light { color: #cbb68f; font-style: italic; font-size: 1rem; margin: 18px 0; text-align: center; }
+.divider.light::before, .divider.light::after { background: #6b4c2a; }
+.code-input { letter-spacing: 0.3em; text-transform: uppercase; font-weight: 900; }
+.entry-row input.name-input { width: min(320px, 100%); font-family: var(--body); font-size: 1.15rem; }
+.form-error { color: var(--blood); font-weight: 600; text-align: center; margin-top: 12px; }
+.form-error.on-dark { color: #f0a29a; }
+.btn-ink.on-dark { border-color: #cbb68f; color: #f1dfb8; }
+.btn-ink.on-dark:hover { background: rgba(255, 255, 255, 0.06); }
+.link-ink.on-dark { color: var(--gold-light); }
+.link-ink:disabled { opacity: 0.55; cursor: default; text-decoration: none; }
+.party-code { color: var(--gold-light); letter-spacing: 0.2em; font-family: var(--display); }
+.account-line { text-align: center; color: #a99272; font-size: 0.9rem; margin-top: 18px; }
+.party-actions { margin-top: 22px; }
+
+.boss { text-align: center; padding: 28px 30px; margin-top: 8px; }
+.boss .kicker { margin-bottom: 4px; }
+.boss-name { font-family: var(--fancy); font-size: clamp(1.5rem, 4vw, 2.1rem); }
+.boss-flavor { font-style: italic; color: var(--ink-soft); }
+.boss-bar { position: relative; height: 26px; max-width: 560px; margin: 12px auto; border: 2px solid var(--ink); border-radius: 4px; background: rgba(255, 250, 235, 0.5); overflow: hidden; }
+.boss-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #6e1414, var(--blood-2)); transition: width 0.5s; }
+.boss-bar span { position: relative; display: block; line-height: 22px; font-family: var(--display); font-weight: 700; font-size: 0.85rem; color: var(--ink); mix-blend-mode: multiply; }
+.boss-weak strong { color: var(--blood); }
+.boss.slain .boss-name { text-decoration: line-through; text-decoration-color: var(--blood); text-decoration-thickness: 3px; }
+
+.members { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.member { padding: 18px 20px; animation: none; }
+.member::before { inset: 6px; outline: none; }
+.member-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.member-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+.you { font-family: var(--body); font-weight: 400; font-style: italic; color: var(--ink-faint); font-size: 0.85rem; }
+.member-class { color: var(--blood); font-size: 0.9rem; }
+.member-dmg { display: flex; flex-direction: column; align-items: center; border: 1.5px solid var(--ink); border-radius: 6px; padding: 2px 10px; min-width: 56px; }
+.member-dmg strong { font-family: var(--display); font-size: 1.2rem; line-height: 1.2; }
+.member-dmg span { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); }
+.member-scores { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 12px 0 8px; }
+.member-scores span { display: flex; flex-direction: column; align-items: center; border: 1px solid var(--ink-faint); border-radius: 4px; padding: 2px 0; font-family: var(--display); font-weight: 700; }
+.member-scores small { font-size: 0.55rem; letter-spacing: 0.06em; color: var(--ink-soft); }
+.member-scores span.weak { border-color: var(--blood); color: var(--blood); }
+.member-foot { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: var(--ink-soft); }
+.chronicle li.to-me { color: var(--blood); font-weight: 600; }
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sheet-head { grid-template-columns: 1fr; }
