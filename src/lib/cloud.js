@@ -68,8 +68,30 @@ export function writeCard(uid, card) {
   return setDoc(doc(db, "cards", uid), clean(card));
 }
 
-export function watchCard(uid, onChange) {
-  return onSnapshot(doc(db, "cards", uid), (snap) => onChange(snap.exists() ? snap.data() : null), () => onChange(null));
+/**
+ * Watch a party mate's card. Firestore cancels a listener when a read is denied (for example
+ * while a new member's card still points at no party), so re-subscribe after a short pause.
+ */
+export function watchCard(uid, onChange, retryMs = 5000) {
+  let unsub = () => {};
+  let timer = null;
+  let stopped = false;
+  const subscribe = () => {
+    unsub = onSnapshot(
+      doc(db, "cards", uid),
+      (snap) => onChange(snap.exists() ? snap.data() : null),
+      () => {
+        onChange(null);
+        if (!stopped) timer = setTimeout(subscribe, retryMs);
+      }
+    );
+  };
+  subscribe();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    unsub();
+  };
 }
 
 // ── Parties ────────────────────────────────────────────────────────────

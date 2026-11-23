@@ -27,7 +27,10 @@ service cloud.firestore {
 
     // ── Public card (shown to party mates) ───────────────────────
     match /cards/{uid} {
+      // `resource == null`: a card that doesn't exist yet reveals nothing, and allowing it lets a
+      // party mate's listener wait for a new member's card instead of being cancelled.
       allow read: if isSelf(uid)
+        || resource == null
         || (resource.data.partyId is string && isMember(resource.data.partyId));
       allow delete: if isSelf(uid);
       allow create, update: if isSelf(uid)

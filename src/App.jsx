@@ -51,7 +51,13 @@ export default function App() {
   const lastLevel = useRef(level);
   useEffect(() => {
     if (level > lastLevel.current && lastLevel.current > 0 && cloud.user && save?.partyId) {
-      postFeed(save.partyId, { type: "level", fromUid: cloud.user.uid, fromName: save.name || "Nameless Hero", detail: String(level) }).catch(() => {});
+      // Fixed id per hero and level: other tabs or devices that see the same level-up through
+      // sync hit the same document, and the rules forbid overwriting it, so it's posted once.
+      postFeed(
+        save.partyId,
+        { type: "level", fromUid: cloud.user.uid, fromName: save.name || "Nameless Hero", detail: String(level) },
+        `level-${cloud.user.uid}-${level}`
+      ).catch(() => {});
     }
     lastLevel.current = level;
   }, [level, cloud.user, save?.partyId, save?.name]);
